@@ -1,0 +1,7 @@
+packages/
+x64/
+.vs/
+.bin/
+.obj/
+Kinect/dnn_model_2_0_lite_op11.onnx
+Kinect/dnn_model_2_0_op11.onnx

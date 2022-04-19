@@ -562,7 +562,7 @@ int main(int argc, char* argv[])
 			fscanf(file, "%f %f %f\n", &x, &y, &z);
 			Vertex tempVertex;
 			tempVertex.X = x / scale;
-			tempVertex.Y = y / scale;
+			tempVertex.Y = -y / scale;
 			tempVertex.Z = z / scale;
 			vertex.push_back(tempVertex);
 		}
@@ -570,7 +570,7 @@ int main(int argc, char* argv[])
 			fscanf(file, "%f %f %f\n", &x, &y, &z);
 			Vertex tempVertex;
 			tempVertex.X = x / scale;
-			tempVertex.Y = y / scale;
+			tempVertex.Y = -y / scale;
 			tempVertex.Z = z / scale;
 			skeleton.push_back(tempVertex);
 		}

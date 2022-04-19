@@ -1,10 +1,7 @@
 #include "Renderer.h"
-#include "SocketClient.h"
+#include "SocketServer.h"
 #include <vector>
-
-vector<Vertex> realVertex;
-vector<Vertex> realNormal;
-vector<Vertex> realTexture;
+#include <sstream>
 
 void draw_center(void)
 {
@@ -519,32 +516,119 @@ void display()
 
 }
 
+void parsing(const char* line) {
+	float x, y, z;
+	char lineHeader[128];
+	sscanf(line, "%s %f %f %f", lineHeader, &x, &y, &z);
+	if (strcmp(lineHeader, "v") == 0) {
+		Vertex tempVertex;
+		tempVertex.X = x / scale;
+		tempVertex.Y = y / scale;
+		tempVertex.Z = z / scale;
+		vertex.push_back(tempVertex);
+	}
+	else if (strcmp(lineHeader, "b") == 0) {
+		Vertex tempVertex;
+		tempVertex.X = x / scale;
+		tempVertex.Y = y / scale;
+		tempVertex.Z = z / scale;
+		skeleton.push_back(tempVertex);
+	}
+	else if (strcmp(lineHeader, "vt") == 0) {
+		Vertex tempVertex;
+		tempVertex.X = x / scale;
+		tempVertex.Y = y / scale;
+		texture.push_back(tempVertex);
+	}
+	else if (strcmp(lineHeader, "vn") == 0) {
+		Vertex tempVertex;
+		tempVertex.X = x / scale;
+		tempVertex.Y = y / scale;
+		tempVertex.Z = z / scale;
+		normal.push_back(tempVertex);
+	}
+	else if (strcmp(lineHeader, "f") == 0) {
+		std::string vertex1, vertex2, vertex3;
+		unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
+		int matches = sscanf(line, "%d %d %d %d\n", &vertexIndex[0], &vertexIndex[1], &vertexIndex[2], &vertexIndex[3]);
+		if (matches != 4) {
+			printf("File can't be read by our simple parser : ( Try exporting with other options\n");
+			return;
+		}
+		vertexIndices.push_back(vertexIndex[0]);
+		vertexIndices.push_back(vertexIndex[1]);
+		vertexIndices.push_back(vertexIndex[2]);
+		vertexIndices.push_back(vertexIndex[3]);
+		//uvIndices.push_back(uvIndex[0]);
+		//uvIndices.push_back(uvIndex[1]);
+		//uvIndices.push_back(uvIndex[2]);
+		//normalIndices.push_back(normalIndex[0]);
+		//normalIndices.push_back(normalIndex[1]);
+		//normalIndices.push_back(normalIndex[2]);
+		//normalIndices.push_back(normalIndex[3]);
+	}
+}
+
+void calculateFace() {
+	for (unsigned int i = 0; i < vertexIndices.size(); i++) {
+		unsigned int vertexIndex = vertexIndices[i];
+		Vertex tempVertex = vertex[vertexIndex - 1];
+		realVertex.push_back(tempVertex);
+
+		//unsigned int normalIndex = normalIndices[i];
+		//Vertex tempNormal = normal[normalIndex - 1];
+		//realNormal.push_back(tempNormal);
+
+		//unsigned int uvIndex = uvIndices[i];
+		//Vertex tempUv = vertex[uvIndex - 1];
+		//realVertex.push_back(tempUv);
+	}
+}
+
+vector<string> split(string str, char Delimiter) {
+	istringstream iss(str);             // istringstream에 str을 담는다.
+	string buffer;                      // 구분자를 기준으로 절삭된 문자열이 담겨지는 버퍼
+
+	vector<string> result;
+
+	// istringstream은 istream을 상속받으므로 getline을 사용할 수 있다.
+	while (getline(iss, buffer, Delimiter)) {
+		result.push_back(buffer);               // 절삭된 문자열을 vector에 저장
+	}
+
+	return result;
+}
 
 int main(int argc, char* argv[])
 {
 	try {
-		SocketClient sock = SocketClient();
+		SocketServer sock = SocketServer();
+		vector<string> lines;
 		string msg;
 		sock.connection();
 		for (;;) {
-			msg = sock.receiveData();
-			printf(msg.c_str());
-			printf("\n");
-			if (strcmp(msg.c_str(), "fin") == 0) {
-				break;
+			msg = sock.recvData();
+			lines = split(msg, '\n');
+			for (int i = 0; i < lines.size(); i++) {
+				parsing(lines[i].c_str());
 			}
 		}
-		sock.close();
 	}
 	catch (string exception) {
+		calculateFace();
+
+		InitializeWindow(argc, argv);
+
+		display();
+
+		glutMainLoop();
+
 		return 1;
 	}
 
 
-	vector<int> vertexIndices;
-	vector<int> uvIndices;
-	vector<int> normalIndices;
 
+	/*
 	FILE* file;
 	file = fopen("junyong10.obj", "r");
 
@@ -613,26 +697,13 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	for (unsigned int i = 0; i < vertexIndices.size(); i++) {
-		unsigned int vertexIndex = vertexIndices[i];
-		Vertex tempVertex = vertex[vertexIndex - 1];
-		realVertex.push_back(tempVertex);
 
-		//unsigned int normalIndex = normalIndices[i];
-		//Vertex tempNormal = normal[normalIndex - 1];
-		//realNormal.push_back(tempNormal);
-
-		//unsigned int uvIndex = uvIndices[i];
-		//Vertex tempUv = vertex[uvIndex - 1];
-		//realVertex.push_back(tempUv);
-	}
 
 	fclose(file);
+			*/
 
-	InitializeWindow(argc, argv);
 
-	display();
 
-	glutMainLoop();
 	return 0;
+
 }

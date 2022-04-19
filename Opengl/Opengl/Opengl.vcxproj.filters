@@ -23,7 +23,7 @@
     <ClInclude Include="Renderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SocketClient.h">
+    <ClInclude Include="SocketServer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>

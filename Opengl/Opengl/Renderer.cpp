@@ -523,14 +523,14 @@ void parsing(const char* line) {
 	if (strcmp(lineHeader, "v") == 0) {
 		Vertex tempVertex;
 		tempVertex.X = x / scale;
-		tempVertex.Y = y / scale;
+		tempVertex.Y = -y / scale;
 		tempVertex.Z = z / scale;
 		vertex.push_back(tempVertex);
 	}
 	else if (strcmp(lineHeader, "b") == 0) {
 		Vertex tempVertex;
 		tempVertex.X = x / scale;
-		tempVertex.Y = y / scale;
+		tempVertex.Y = -y / scale;
 		tempVertex.Z = z / scale;
 		skeleton.push_back(tempVertex);
 	}

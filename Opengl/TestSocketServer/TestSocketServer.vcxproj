@@ -142,7 +142,7 @@
     <ClCompile Include="testServer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SocketServer.h" />
+    <ClInclude Include="SocketClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

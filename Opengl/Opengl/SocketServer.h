@@ -88,28 +88,17 @@ public:
 		closesocket(ListenSocket);
 	}
 
-	void sendData(string data) {
-
+	string recvData() {
 		int iResult;
 
-		const int recvbufSize = 1024;
+		const int recvbufSize = 16384;
 		char recvbuf[recvbufSize];
 
 
 		// Receive until the peer shuts down the connection
-		iSendResult = recv(ClientSocket, recvbuf, recvbufSize, 0);
+		iResult = recv(ClientSocket, recvbuf, recvbufSize, 0);
 		if (iResult > 0) {
 			printf("Bytes received: %d\n", iResult);
-
-			// Echo the buffer back to the sender
-			iSendResult = send(ClientSocket, recvbuf, iResult, 0);
-			if (iSendResult == SOCKET_ERROR) {
-				printf("send failed with error: %d\n", WSAGetLastError());
-				closesocket(ClientSocket);
-				WSACleanup();
-				return;
-			}
-			printf("Bytes sent: %d\n", iSendResult);
 		}
 		else if (iResult == 0)
 			printf("Connection closing...\n");
@@ -117,9 +106,9 @@ public:
 			printf("recv failed with error: %d\n", WSAGetLastError());
 			closesocket(ClientSocket);
 			WSACleanup();
-			return;
+			throw string("exception");
 		}
-		printf("Bytes sent: %d, %s", iSendResult, data);
+		return string(recvbuf, iResult);
 	}
 
 	void close() {

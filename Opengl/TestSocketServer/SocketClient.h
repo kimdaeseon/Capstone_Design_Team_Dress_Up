@@ -78,17 +78,14 @@ public:
 		}
 	}
 
-	char* receiveData(string data) {
+	void sendData(string data) {
 		iResult = send(ConnectSocket, data.c_str(), data.size(), 0);
 		if (iResult == SOCKET_ERROR) {
 			printf("send failed with error: %d\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			WSACleanup();
-			return ;
+			return;
 		}
-
-		printf("Bytes Sent: %ld\n", iResult);
-		return 
 	}
 
 	void close() {

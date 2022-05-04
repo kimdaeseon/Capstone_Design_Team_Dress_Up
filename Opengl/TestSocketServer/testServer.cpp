@@ -1,17 +1,30 @@
 #include "SocketServer.h"
+#include "SocketClient.h"
+#include <stdio.h>
+#include <stdlib.h>
+#pragma warning(disable:4996)
+
 
 int __cdecl main(void)
 {
-	SocketServer server = SocketServer();
+	SocketClient client;
+	FILE* file;
+	file = fopen("junyong10.obj", "r");
+	client.connection();
+	char* line;
 
-	server.connection();
-
-	for (int i = 0; i < 10; i++) {
-		server.sendData("yea it works!");
+	while (1) {
+		char line[128];
+		// read the first word of the line
+		if (NULL != file) {
+			while (NULL != fgets(line, sizeof(line), file)) {
+				client.sendData(string(line));
+			}
+			fclose(file);
+		}
+		return 0;
 	}
 
-	server.sendData("fin");
-
-	server.close();
-
+	client.close();
+	
 }

@@ -60,6 +60,14 @@ vector<Vertex> normal;
 vector<Vertex> texture;
 vector<Vertex> skeleton;
 
+vector<int> vertexIndices;
+vector<int> uvIndices;
+vector<int> normalIndices;
+
+vector<Vertex> realVertex;
+vector<Vertex> realNormal;
+vector<Vertex> realTexture;
+
 /*
 Vertex *vertex;
 Vertex *vertex_color;

@@ -3,10 +3,6 @@
 #include <vector>
 #include <sstream>
 
-vector<Vertex> realVertex;
-vector<Vertex> realNormal;
-vector<Vertex> realTexture;
-
 void draw_center(void)
 {
 	glBegin(GL_LINES);

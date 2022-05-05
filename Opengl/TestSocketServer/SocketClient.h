@@ -81,10 +81,19 @@ public:
 	void sendData(string data) {
 		iResult = send(ConnectSocket, data.c_str(), data.size(), 0);
 		if (iResult == SOCKET_ERROR) {
-			printf("send failed with error: %d\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			WSACleanup();
 			return;
+		}
+	}
+
+	void recvFlag() {
+		const int recvbufSize = 128;
+		char recvbuf[recvbufSize];
+
+		iResult = recv(ConnectSocket, recvbuf, recvbufSize, 0);
+		if (iResult > 0) {
+			this->isReadyToSend = true;
 		}
 	}
 
@@ -95,6 +104,9 @@ public:
 	}
 
 private:
+
+	bool isReadyToSend = true;
+
 	SOCKET ConnectSocket = INVALID_SOCKET;
 	WSADATA wsaData;
 

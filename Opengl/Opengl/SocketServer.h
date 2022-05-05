@@ -91,14 +91,14 @@ public:
 	string recvData() {
 		int iResult;
 
-		const int recvbufSize = 16384;
+		const int recvbufSize = 2560;
 		char recvbuf[recvbufSize];
 
 
 		// Receive until the peer shuts down the connection
 		iResult = recv(ClientSocket, recvbuf, recvbufSize, 0);
 		if (iResult > 0) {
-			printf("Bytes received: %d\n", iResult);
+			send(ClientSocket, "good", string("good").size(), 0);
 		}
 		else if (iResult == 0)
 			printf("Connection closing...\n");

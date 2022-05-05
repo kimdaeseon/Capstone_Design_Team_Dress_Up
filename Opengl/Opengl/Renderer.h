@@ -3,7 +3,11 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
+
+#define GL_GLEXT_PROTOTYPES
 #include "gl\freeglut.h"		// OpenGL header files
+#include "Vertex.h"
+#include "ObjParser.h"
 #include <list>
 #include <vector>
 //#define TIME_CHECK_
@@ -11,20 +15,12 @@
 #pragma warning(disable:4996)
 #define BLOCK 4
 #define READ_SIZE 110404//5060//110404
-#define scale 2000
 //#define TEST 14989
 //#define STATIC_
 
 using namespace std;
 
-struct Vertex {
-	float X;
-	float Y;
-	float Z;
-	int index_1;
-	int index_2;
-	int index_3;
-};
+
 
 // variables for GUI
 const float TRACKBALLSIZE = 0.8f;
@@ -54,19 +50,6 @@ float t[3] = { 0 };
 Vertex skt[23];
 BOOLEAN bTracked = false;
 bool checkt = false;
-
-vector<Vertex> vertex;
-vector<Vertex> normal;
-vector<Vertex> texture;
-vector<Vertex> skeleton;
-
-vector<int> vertexIndices;
-vector<int> uvIndices;
-vector<int> normalIndices;
-
-vector<Vertex> realVertex;
-vector<Vertex> realNormal;
-vector<Vertex> realTexture;
 
 /*
 Vertex *vertex;

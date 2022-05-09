@@ -15,16 +15,24 @@ const int scale = 2000;
 class ObjParser {
 public:
 	void parse(const char* line) {
-		parsing(line);
+		prasingWithTexture(line);
 	}
 
 	void calculateFace() {
-		for (unsigned int i = 0; i < vertexIndices.size(); i++) {
-			unsigned int vertexIndex = vertexIndices[i];
-			Vertex tempVertex = vertex[vertexIndex - 1];
-			realVertex.push_back(tempVertex);
+		printf("%d", vertexIndices.size());
+		try {
+			for (unsigned int i = 0; i < vertexIndices.size(); i++) {
+				printf("%d \n", vertexIndices[i]);
+				unsigned int vertexIndex = vertexIndices[i];
+				Vertex tempVertex = vertex[vertexIndex - 1];
+				realVertex.push_back(tempVertex);
+			}
+		}
+		catch(string err) {
+			return;
 		}
 
+		/*
 		for (unsigned int i = 0; i < uvIndices.size(); i++) {
 			unsigned int uvIndex = uvIndices[i];
 			Vertex tempUv = texture[uvIndex - 1];
@@ -35,7 +43,7 @@ public:
 			unsigned int normalIndex = normalIndices[i];
 			Vertex tempNormal = normal[normalIndex - 1];
 			realNormal.push_back(tempNormal);
-		}
+		}*/
 	}
 
 	vector<Vertex> vertex;
@@ -86,8 +94,8 @@ private:
 		}
 		else if (strcmp(lineHeader, "f") == 0) {
 			unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
-			int matches = sscanf(line, "%s %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d\n", lineHeader, &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2], &vertexIndex[3], &uvIndex[3], &normalIndex[3]);
-			if (matches != 13) {
+			int matches = sscanf(line, "%s %d %d %d\n", lineHeader, &vertexIndex[0], &vertexIndex[1], &vertexIndex[2]);
+			if (matches != 4) {
 				printf("File can't be read by our simple parser : ( Try exporting with other options\n");
 				return;
 			}
@@ -95,6 +103,7 @@ private:
 			vertexIndices.push_back(vertexIndex[0]);
 			vertexIndices.push_back(vertexIndex[1]);
 			vertexIndices.push_back(vertexIndex[2]);
+			/*
 			vertexIndices.push_back(vertexIndex[3]);
 			uvIndices.push_back(uvIndex[0]);
 			uvIndices.push_back(uvIndex[1]);
@@ -104,6 +113,7 @@ private:
 			normalIndices.push_back(normalIndex[1]);
 			normalIndices.push_back(normalIndex[2]);
 			normalIndices.push_back(normalIndex[3]);
+			*/
 		}
 	}
 

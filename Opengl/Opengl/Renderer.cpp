@@ -1,7 +1,13 @@
 #include "Renderer.h"
 #include "SocketServer.h"
+#include "ObjParser.h"
+#include "stb_image.h"
+
 #include <vector>
 #include <sstream>
+#include <fstream>
+
+ObjParser objParser = ObjParser();
 
 void draw_center(void)
 {
@@ -369,33 +375,13 @@ void display()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// set matrix
 	glMatrixMode(GL_PROJECTION);
-	//glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glPushMatrix();
-	//glOrtho(-2, 2, -2, 2, -2, 2);      // labtest 1
-	//glOrtho(-2, 2, -2, 2, 0, 2);      // labtest 1
-	//glOrtho(0, 2, -2, 2, -2, 2);      // labtest 1
-	gluPerspective(20, 1, 1, 80);		// labtest 2
-	//gluPerspective(60, 1, 1, 20);		// labtest 2
+	gluPerspective(20, 1, 1, 80);
 
-	//glFrustum(-1, 1, -1, 1, 1, 20);     // labtest 2-1
-	//glFrustum(-0.1, 0.1, -0.1, 0.1, 1, 20);    // labtest 2-1
-	//glTranslatef(t[0], t[1], t[2] - 1.0f);
+	glTranslatef(t[0], t[1], t[2] - 3.0f);
 
-	glTranslatef(t[0], t[1], t[2] - 3.0f);    // labtest 3
-	//glScalef(3, 3, 3);			// labtest 3
-
-	glScalef(1, 2, 3);			// labtest 4
-	//glScalef(1, 1, 1);			   // labtest 4
-	//glTranslatef(1,0,0);
-
-
-	//glRotatef(35.26, 1.0, 0.0, 0.0);	// labtest 5
-	//glRotatef(45.0, 0.0, 1.0, 0.0);   // labtest 5
-
-	//gluLookAt(0, 0, 3, 0, 0, 0, 0, 1, 0);    // labtest 6
-	//gluLookAt(0, 0, 3, 0, 0, 0, 0, -1, 0);     // labtest 6
-	//gluLookAt(0, 0, 3, 0, 0, 100, 0, 1, 0);    // labtest 6
+	glScalef(1, 2, 3);
 
 	GLfloat m[4][4], m1[4][4];
 	build_rotmatrix(m, quat);
@@ -421,168 +407,52 @@ void display()
 	m1[3][3] = 1.0f;
 
 	glMultMatrixf(&m[0][0]);
-	//glMatrixMode(GL_MODELVIEW);
-	//glMatrixMode(GL_PROJECTION);
-	// Draw Model Points ///////////
-	//GLfloat r, g, b;
-
-	/*
-	// Draw Input depth ///////////
-	float dispgap = 0;
-	glPointSize(3);
-
-	glBegin(GL_POINTS);
-
-	//glColor3f(0, 0, 1);
-	//glVertex3f(0.0, 0.0, 0.0);
-
-	float xx, yy, zz;
-	float xx1, yy1, zz1;
-	*/
-	/*
-	for (register int j = -250; j < 250; j=j+10)
-	{
-		for (register int i = -250; i < 250; i=i+10)
-		{
-			for (register int z = -250; z < 250; z = z + 10)
-			{
-				r = (i+250) / 250.0;
-				g = (j+250) / 250.0;
-				b = (z+250) / 250.0;
-				glColor3f(r, g, b);
-				//glColor3f(0.4, 0.4, 0.4);
-				xx = j / 500.0;
-				yy = i / 500.0;
-				zz = z / 500.0;
-				xx1 = m1[0][0] * xx + m1[0][1] * yy + m1[0][2] * zz;
-				yy1 = m1[1][0] * xx + m1[1][1] * yy + m1[1][2] * zz;
-				zz1 = m1[2][0] * xx + m1[2][1] * yy + m1[2][2] * zz;
-				//glVertex3f(xx1,yy1,zz1);   // labtest 7 with ortho
-											// labtest 8 see perspective again in pipeline viewpoint
-				glVertex3f(xx, yy, zz);
-			}
-		}
-	}
-
-	glEnd();
-	*/
-
-
-	//set: gluPerspective(10, 1, 1, 200);		// labtest 9
 
 	glPointSize(7);
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glEnable(GL_TEXTURE_2D);
+	// 텍스처 wrapping/filtering 옵션 설정(현재 바인딩된 텍스처 객체에 대해)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// 텍스처 로드 및 생성
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load("1.jpg", &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
 
+	vector<Vertex> skeleton = objParser.skeleton;
+	vector<Vertex> realVertex = objParser.realVertex;
+	vector<Vertex> realNormal = objParser.realNormal;
+	vector<Vertex> realTexture = objParser.realTexture;
+
+
+	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
+
+	//glBegin(GL_QUADS);
 	glBegin(GL_POINTS);
-
 	for (register int j = 0; j < skeleton.size(); j++) {
 		glColor3f(1.0, 0, 0);
 		glVertex3f(skeleton[j].X, skeleton[j].Y, skeleton[j].Z);
 	}
-	for (register int j = 0; j < vertex.size(); j = j + 1)
-	{
-		glColor3f(0.5, 0.5, 1);
-		//glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
-		glVertex3f(vertex[j].X, vertex[j].Y, vertex[j].Z);
-	}
-	for (register int j = 0; j < realNormal.size(); j = j + 1)
-	{
-		glNormal3f(realNormal[j].X, realNormal[j].Y, realNormal[j].Z);
+	for (register int j = 0; j < realVertex.size(); j = j + 1) {
+		//glTexCoord2f(realTexture[j].X, realTexture[j].Y);
+		glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
+		
+
 	}
 	glEnd();
-
-
-
-	/*
-	glPointSize(7);
-	glBegin(GL_TRIANGLES);
-
-	glColor3f(0, 0, 1);
-	glVertex3f(-1, -1, 1);
-	glColor3f(0, 1, 0);
-	glVertex3f(1, -1, 1);
-	glColor3f(1, 0, 0);
-	glVertex3f(-1, 1, 1);
-
-	glColor3f(0, 0, 1);
-	glVertex3f(1, 1, 1);
-	glColor3f(0, 1, 0);
-	glVertex3f(1, -1, 1);
-	glColor3f(1, 0, 0);
-	glVertex3f(-1, 1, 1);
-
-	glEnd();
-	*/
 	glutSwapBuffers();
-
-}
-
-void parsing(const char* line) {
-	float x, y, z;
-	char lineHeader[128];
-	sscanf(line, "%s %f %f %f", lineHeader, &x, &y, &z);
-	if (strcmp(lineHeader, "v") == 0) {
-		Vertex tempVertex;
-		tempVertex.X = x / scale;
-		tempVertex.Y = -y / scale;
-		tempVertex.Z = z / scale;
-		vertex.push_back(tempVertex);
-	}
-	else if (strcmp(lineHeader, "b") == 0) {
-		Vertex tempVertex;
-		tempVertex.X = x / scale;
-		tempVertex.Y = -y / scale;
-		tempVertex.Z = z / scale;
-		skeleton.push_back(tempVertex);
-	}
-	else if (strcmp(lineHeader, "vt") == 0) {
-		Vertex tempVertex;
-		tempVertex.X = x / scale;
-		tempVertex.Y = y / scale;
-		texture.push_back(tempVertex);
-	}
-	else if (strcmp(lineHeader, "vn") == 0) {
-		Vertex tempVertex;
-		tempVertex.X = x / scale;
-		tempVertex.Y = y / scale;
-		tempVertex.Z = z / scale;
-		normal.push_back(tempVertex);
-	}
-	else if (strcmp(lineHeader, "f") == 0) {
-		std::string vertex1, vertex2, vertex3;
-		unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
-		int matches = sscanf(line, "%d %d %d %d\n", &vertexIndex[0], &vertexIndex[1], &vertexIndex[2], &vertexIndex[3]);
-		if (matches != 4) {
-			printf("File can't be read by our simple parser : ( Try exporting with other options\n");
-			return;
-		}
-		vertexIndices.push_back(vertexIndex[0]);
-		vertexIndices.push_back(vertexIndex[1]);
-		vertexIndices.push_back(vertexIndex[2]);
-		vertexIndices.push_back(vertexIndex[3]);
-		//uvIndices.push_back(uvIndex[0]);
-		//uvIndices.push_back(uvIndex[1]);
-		//uvIndices.push_back(uvIndex[2]);
-		//normalIndices.push_back(normalIndex[0]);
-		//normalIndices.push_back(normalIndex[1]);
-		//normalIndices.push_back(normalIndex[2]);
-		//normalIndices.push_back(normalIndex[3]);
-	}
-}
-
-void calculateFace() {
-	for (unsigned int i = 0; i < vertexIndices.size(); i++) {
-		unsigned int vertexIndex = vertexIndices[i];
-		Vertex tempVertex = vertex[vertexIndex - 1];
-		realVertex.push_back(tempVertex);
-
-		//unsigned int normalIndex = normalIndices[i];
-		//Vertex tempNormal = normal[normalIndex - 1];
-		//realNormal.push_back(tempNormal);
-
-		//unsigned int uvIndex = uvIndices[i];
-		//Vertex tempUv = vertex[uvIndex - 1];
-		//realVertex.push_back(tempUv);
-	}
 }
 
 vector<string> split(string str, char Delimiter) {
@@ -599,8 +469,11 @@ vector<string> split(string str, char Delimiter) {
 	return result;
 }
 
+
+
 int main(int argc, char* argv[])
 {
+
 	try {
 		SocketServer sock = SocketServer();
 		vector<string> lines;
@@ -608,14 +481,13 @@ int main(int argc, char* argv[])
 		sock.connection();
 		for (;;) {
 			msg = sock.recvData();
-			lines = split(msg, '\n');
-			for (int i = 0; i < lines.size(); i++) {
-				parsing(lines[i].c_str());
-			}
+			objParser.parse(msg.c_str());
 		}
+		sock.close();
 	}
 	catch (string exception) {
-		calculateFace();
+
+		objParser.calculateFace();
 
 		InitializeWindow(argc, argv);
 
@@ -625,85 +497,4 @@ int main(int argc, char* argv[])
 
 		return 1;
 	}
-
-
-
-	/*
-	FILE* file;
-	file = fopen("junyong10.obj", "r");
-
-	float x, y, z;
-
-	while (1) {
-		char lineHeader[128];
-		// read the first word of the line
-		int res = fscanf(file, "%s", lineHeader);
-		if (res == EOF)
-			break; // EOF = End Of File. Quit the loop.
-
-		// else : parse lineHeader
-		if (strcmp(lineHeader, "v") == 0) {
-			fscanf(file, "%f %f %f\n", &x, &y, &z);
-			Vertex tempVertex;
-			tempVertex.X = x / scale;
-			tempVertex.Y = -y / scale;
-			tempVertex.Z = z / scale;
-			vertex.push_back(tempVertex);
-		}
-		else if (strcmp(lineHeader, "b") == 0) {
-			fscanf(file, "%f %f %f\n", &x, &y, &z);
-			Vertex tempVertex;
-			tempVertex.X = x / scale;
-			tempVertex.Y = -y / scale;
-			tempVertex.Z = z / scale;
-			skeleton.push_back(tempVertex);
-		}
-		else if (strcmp(lineHeader, "vt") == 0) {
-			fscanf(file, "%f %f\n", &x, &y);
-			Vertex tempVertex;
-			tempVertex.X = x / scale;
-			tempVertex.Y = y / scale;
-			texture.push_back(tempVertex);
-		}
-		else if (strcmp(lineHeader, "vn") == 0) {
-			fscanf(file, "%f %f %f\n", &x, &y, &z);
-			Vertex tempVertex;
-			tempVertex.X = x / scale;
-			tempVertex.Y = y / scale;
-			tempVertex.Z = z / scale;
-			normal.push_back(tempVertex);
-		}
-		else if (strcmp(lineHeader, "f") == 0) {
-			std::string vertex1, vertex2, vertex3;
-			unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
-			//int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]);
-			//int matches = fscanf(file, "%d//%d %d//%d %d//%d %d//%d\n", &vertexIndex[0], &normalIndex[0], &vertexIndex[1], &normalIndex[1], &vertexIndex[2], &normalIndex[2], &vertexIndex[3], &normalIndex[3]);
-			int matches = fscanf(file, "%d %d %d %d\n", &vertexIndex[0], &vertexIndex[1], &vertexIndex[2], &vertexIndex[3]);
-			if (matches != 4) {
-				printf("File can't be read by our simple parser : ( Try exporting with other options\n");
-				return false;
-			}
-			vertexIndices.push_back(vertexIndex[0]);
-			vertexIndices.push_back(vertexIndex[1]);
-			vertexIndices.push_back(vertexIndex[2]);
-			vertexIndices.push_back(vertexIndex[3]);
-			//uvIndices.push_back(uvIndex[0]);
-			//uvIndices.push_back(uvIndex[1]);
-			//uvIndices.push_back(uvIndex[2]);
-			//normalIndices.push_back(normalIndex[0]);
-			//normalIndices.push_back(normalIndex[1]);
-			//normalIndices.push_back(normalIndex[2]);
-			//normalIndices.push_back(normalIndex[3]);
-		}
-	}
-
-
-
-	fclose(file);
-			*/
-
-
-
-	return 0;
-
 }

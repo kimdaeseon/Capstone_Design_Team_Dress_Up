@@ -19,6 +19,7 @@ int __cdecl main(void)
 		if (NULL != file) {
 			while (NULL != fgets(line, sizeof(line), file)) {
 				client.sendData(string(line));
+				client.recvFlag();
 			}
 			fclose(file);
 		}

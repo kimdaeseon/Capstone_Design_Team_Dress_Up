@@ -1,4 +1,4 @@
-/*
+
 #include <k4a/k4a.h>
 #include <iostream>
 #include <vector>
@@ -7,6 +7,7 @@
 
 struct color_point_t {
     float xyz[3];
+    int index;
 };
 
 int main() {
@@ -100,19 +101,34 @@ int main() {
     int width = k4a_image_get_width_pixels(point_cloud_image);
     int height = k4a_image_get_height_pixels(point_cloud_image);
     uint16_t *point_cloud_image_data = (uint16_t *)(void *)k4a_image_get_buffer(point_cloud_image);
+    std::vector<int> triangle;
 
     for (int i = 0; i < width * height; i++) {
         color_point_t point;
         point.xyz[0] = point_cloud_image_data[3 * i + 0];
         point.xyz[1] = point_cloud_image_data[3 * i + 1];
         point.xyz[2] = point_cloud_image_data[3 * i + 2];
+        point.index = i;
+        //if (point.xyz[2] == 0) { continue; }
 
-        if (point.xyz[2] == 0) { continue; }
-
-        points.push_back(point);
+        points.push_back(point); //0이 아닌것만 points에 push
     }
 
-    std::cout << points.size() << std::endl;
+    for (int i = 0; i < width * (height-1)-1; i++) {
+        //i번째 z좌표, (i+1)번째 z좌표, (i+width)번째 z좌표가 모두 0이 아닐 때 triangle생성
+        if (point_cloud_image_data[3 * i + 2] != 0 && point_cloud_image_data[3 * i + 5] != 0 && point_cloud_image_data[3 * (i + width) + 2] != 0) {
+            triangle.push_back(i); //2d에서 i번째 index
+            triangle.push_back(i+1);//2d에서 i+1번째 index
+            triangle.push_back(i+width);//2d에서 i+width번째 index
+        }
+        //i+1번째 z좌표, (i+width)번째 z좌표, (i+width+1)번째 z좌표가 모두 0이 아닐 때 triangle생성
+        if (point_cloud_image_data[3 * (i + 1) + 2] != 0 && point_cloud_image_data[3 * (i + width) + 2] != 0 && point_cloud_image_data[3 * (i + 1 + width) + 2] != 0) {
+            triangle.push_back(i+1); //2d에서 i+1번째 index
+            triangle.push_back(i+width); //2d에서 i + width번째 index
+            triangle.push_back(i+width+1);//2d에서 i+width+1번째 index
+        }
+    }
+
     k4a_image_release(point_cloud_image);
     k4a_image_release(depth_image);
 
@@ -122,18 +138,27 @@ int main() {
     fullname << filename << "_" << ".obj";
     myfile.open(fullname.str());
 
+    points.erase(std::remove_if(points.begin(), points.end(), [](color_point_t x)->bool {return x.xyz[2] == 0; }),
+        points.end());
+
+    std::cout << points.size() << std::endl;
+
     for (size_t i = 0; i < points.size(); ++i) {
-        myfile << "v";
-        myfile << points[i].xyz[0] << "\t" << points[i].xyz[1] << "\t" << points[i].xyz[2];
+        myfile << "v ";
+        myfile << points[i].xyz[0] << " " << points[i].xyz[1] << " " << points[i].xyz[2];
         myfile << "\n";
+    }
+    for (int i = 0; i < triangle.size()/3; i++) {
+        myfile << "f ";
+        myfile << triangle[3 * i] << " " << triangle[3 * i + 1] << " " << triangle[3 * i + 2] << "\n";
     }
 
     myfile.close();
     return 0;
 }
 
-*/
 
+/*
 #include <assert.h>
 #include <k4a/k4a.h>
 #include <k4abt.h>
@@ -142,6 +167,7 @@ int main() {
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 static void create_xy_table(const k4a_calibration_t* calibration, k4a_image_t xy_table)
 {
@@ -161,6 +187,9 @@ static void create_xy_table(const k4a_calibration_t* calibration, k4a_image_t xy
         {
             p.xy.x = (float)x;
 
+            //깊이값이 있는 2d좌표를 3d 점으로 반환
+            //p: 소스 카메라 coordinate 픽셀
+            //ray: 입력 픽셀의 3d 좌표가 mm단위로 저장된 출력 포인터
             k4a_calibration_2d_to_3d(
                 calibration, &p, 1.f, K4A_CALIBRATION_TYPE_DEPTH, K4A_CALIBRATION_TYPE_DEPTH, &ray, &valid);
 
@@ -178,7 +207,7 @@ static void create_xy_table(const k4a_calibration_t* calibration, k4a_image_t xy
     }
 }
 
-static void generate_point_cloud(const k4a_image_t depth_image, const k4a_image_t xy_table, k4a_image_t point_cloud, int* point_count)
+static void generate_point_cloud(const k4a_image_t depth_image, const k4a_image_t xy_table, k4a_image_t point_cloud, int* point_count, std::vector<float>& triangle)
 {
     int width = k4a_image_get_width_pixels(depth_image);
     int height = k4a_image_get_height_pixels(depth_image);
@@ -206,7 +235,14 @@ static void generate_point_cloud(const k4a_image_t depth_image, const k4a_image_
     }
 }
 
-static void write_point_cloud(const char* file_name, const k4a_image_t point_cloud, int point_count, const k4abt_skeleton_t skeleton)
+static void triangulization(k4a_image_t point_cloud) {
+    k4a_float3_t* point_cloud_data = (k4a_float3_t*)(void*)k4a_image_get_buffer(point_cloud);
+    
+    std::vector<float> triangle;
+    
+}
+
+static void write_point_cloud(const char* file_name, const k4a_image_t point_cloud, int point_count, const k4abt_skeleton_t& skeleton, std::vector<float> triangle)
 {
     int width = k4a_image_get_width_pixels(point_cloud);
     int height = k4a_image_get_height_pixels(point_cloud);
@@ -225,6 +261,7 @@ static void write_point_cloud(const char* file_name, const k4a_image_t point_clo
     //ofs.close();
 
     std::stringstream ss;
+    ss << point_count << "\n";
     for (int i = 0; i < width * height; i++)
     {
         //데이터가 숫자가 아니면 continue
@@ -243,6 +280,22 @@ static void write_point_cloud(const char* file_name, const k4a_image_t point_clo
     }
     
     
+    for (int i = 0; i < point_count-width; i++) {
+        if (isnan(point_cloud_data[i].xyz.x) || isnan(point_cloud_data[i].xyz.y) || isnan(point_cloud_data[i].xyz.z))
+        {
+            continue;
+        }
+
+        ss << "f " << i << " " << i + 1 << " " << i + width << "\n";
+    }
+    for (int i = 0; i < point_count-width-1; i++) {
+        if (isnan(point_cloud_data[i].xyz.x) || isnan(point_cloud_data[i].xyz.y) || isnan(point_cloud_data[i].xyz.z))
+        {
+            continue;
+        }
+        ss << "f " << i + 1 << " " << i + width << " " << i + width + 1 << "\n";
+    }
+
 
     std::ofstream ofs_text(file_name, std::ios::out | std::ios::app);
     ofs_text.write(ss.str().c_str(), (std::streamsize)ss.str().length());
@@ -297,12 +350,13 @@ int main(int argc, char** argv)
     k4a_image_t depth_image = NULL;
     k4a_image_t xy_table = NULL;
     k4a_image_t point_cloud = NULL;
+    k4a_image_t body_index_map = NULL;
 
     k4abt_tracker_t tracker = NULL;
     k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
 
     int point_count = 0;
-
+  
     if (argc != 2)
     {
         printf("Kinect.exe <output file>\n");
@@ -369,6 +423,13 @@ int main(int argc, char** argv)
         calibration.depth_camera_calibration.resolution_width * (int)sizeof(k4a_float3_t),
         &point_cloud);
 
+    k4a_image_create(K4A_IMAGE_FORMAT_CUSTOM,
+        calibration.depth_camera_calibration.resolution_width,
+        calibration.depth_camera_calibration.resolution_height,
+        calibration.depth_camera_calibration.resolution_width * (int)sizeof(k4a_float2_t),
+        &body_index_map);
+
+
     if (K4A_RESULT_SUCCEEDED != k4a_device_start_cameras(device, &config))
     {
         printf("Failed to start cameras\n");
@@ -425,12 +486,13 @@ int main(int argc, char** argv)
     k4a_wait_result_t pop_frame_result = k4abt_tracker_pop_result(tracker, &body_frame, K4A_WAIT_INFINITE);
     k4abt_skeleton_t skeleton;
 
+    body_index_map = k4abt_frame_get_body_index_map(body_frame);
+
     if (pop_frame_result == K4A_WAIT_RESULT_SUCCEEDED) {
         size_t num_bodies = k4abt_frame_get_num_bodies(body_frame);
         printf("%zu bodies are detected!\n", num_bodies);
-        
-        for (size_t i = 0; i < num_bodies; i++) {
 
+        for (size_t i = 0; i < num_bodies; i++) {
             k4abt_frame_get_body_skeleton(body_frame, i, &skeleton);
             for (int j = 0; j < K4ABT_JOINT_COUNT; j++) {
                 printf("x y z: %f %f %f\n", skeleton.joints[j].position.xyz.x,
@@ -441,9 +503,11 @@ int main(int argc, char** argv)
 
         k4abt_frame_release(body_frame);
     }
-    generate_point_cloud(depth_image, xy_table, point_cloud, &point_count);
+    k4a_image_release(body_index_map);
+    std::vector<float> triangle;
+    generate_point_cloud(depth_image, xy_table, point_cloud, &point_count,triangle);
 
-    write_point_cloud(file_name.c_str(), point_cloud, point_count, skeleton);
+    write_point_cloud(file_name.c_str(), point_cloud, point_count, skeleton, triangle);
 
     k4a_image_release(depth_image);
     k4abt_tracker_shutdown(tracker);
@@ -457,3 +521,6 @@ int main(int argc, char** argv)
 
     return returnCode;
 }
+
+
+*/

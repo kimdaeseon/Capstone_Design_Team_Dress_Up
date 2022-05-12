@@ -10,7 +10,7 @@ using namespace std;
 
 
 
-const int scale = 2000;
+const int scale = 1000;
 
 class ObjParser {
 public:

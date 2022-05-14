@@ -1,5 +1,6 @@
 
 #include <k4a/k4a.h>
+#include <k4abt.h>
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -9,6 +10,7 @@
 struct color_point_t {
     float xyz[3];
     int number;
+    int body;
 };
 
 int main() {
@@ -87,7 +89,38 @@ int main() {
     int depth_image_height_pixels = k4a_image_get_height_pixels(depth_image);
 
     k4a_image_t point_cloud_image = NULL;
+    k4a_image_t body_index_map = NULL;
 
+    //create body tracker
+    k4abt_tracker_t body_tracker;
+    k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
+    if (K4A_RESULT_SUCCEEDED != k4abt_tracker_create(&calibration, tracker_config, &body_tracker)) {
+        printf("Failed to create body tracker\n");
+        return 0;
+    }
+
+    //extract body frame
+    k4abt_frame_t body_frame = NULL;
+    k4abt_tracker_enqueue_capture(body_tracker,capture,TIMEOUT_IN_MS);
+    k4a_wait_result_t pop_frame_result = k4abt_tracker_pop_result(body_tracker, &body_frame, TIMEOUT_IN_MS);
+    if (K4A_RESULT_SUCCEEDED != pop_frame_result) {
+        printf("Failed to pop body frame!\n");
+        return 0;
+    }
+
+    //create body index map image
+    body_index_map = k4abt_frame_get_body_index_map(body_frame);
+    uint8_t* body_index_map_data = (uint8_t*)(void*)k4a_image_get_buffer(body_index_map);
+    
+    /*
+    for (int j = 0; j < k4a_image_get_height_pixels(body_index_map); j++) {
+        for (int i = 0; i < k4a_image_get_width_pixels(body_index_map); i++) {
+            std::cout << (int)*body_index_map_data << ", ";
+            body_index_map_data++;
+        }
+        std::cout << std::endl;
+    }
+    */
     //create point cloud image
     if (K4A_RESULT_SUCCEEDED != k4a_image_create(K4A_IMAGE_FORMAT_CUSTOM, depth_image_width_pixels,
         depth_image_height_pixels, 3*depth_image_width_pixels * (int)sizeof(int16_t), &point_cloud_image)) {
@@ -115,9 +148,10 @@ int main() {
         point.xyz[0] = point_cloud_image_data[3*i];
         point.xyz[1] = point_cloud_image_data[3*i+1];
         point.xyz[2] = point_cloud_image_data[3*i+2];
+        point.body = body_index_map_data[i];
 
         //if (point.xyz[2] == 0) { continue; }
-        if (point.xyz[2] == 0) {
+        if (point.xyz[2] == 0 || point.body == K4ABT_BODY_INDEX_MAP_BACKGROUND) {
             point.number = 0;
         }
         else {
@@ -127,29 +161,35 @@ int main() {
         points.push_back(point); 
     }
 
+    //triangulation
     std::vector<int> triangle;
     for (int i = 0; i < width * (height-1)-1; i++) {
         //i번째 z좌표, (i+1)번째 z좌표, (i+width)번째 z좌표가 모두 0이 아닐 때 triangle생성
-        if (point_cloud_image_data[3*i+2] !=0 && point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] !=0) {
+        if ((point_cloud_image_data[3*i+2] !=0 && point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] !=0) && 
+            (body_index_map_data[i]!=K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND &&body_index_map_data[i+width]!= K4ABT_BODY_INDEX_MAP_BACKGROUND)) {
             triangle.push_back(points[i].number);   
             triangle.push_back(points[i + 1].number);   
             triangle.push_back(points[i + width].number);       
         }
 
         //i+1번째 z좌표, (i+width)번째 z좌표, (i+width+1)번째 z좌표가 모두 0이 아닐 때 triangle 생성
-        if (point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] != 0 && point_cloud_image_data[3*(i+width+1)+2] !=0) {
+        if ((point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] != 0 && point_cloud_image_data[3*(i+width+1)+2] !=0) && 
+            (body_index_map_data[i+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+width]!= K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+width+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND)) {
             triangle.push_back(points[i + 1].number);   
             triangle.push_back(points[i + width].number);   
             triangle.push_back(points[i + width + 1].number);  
         }
     }
  
-    //points vector에서 z좌표가 0인 점 제거
-    points.erase(std::remove_if(points.begin(), points.end(), [](color_point_t x)->bool {return x.xyz[2] == 0; }),
+    //points vector에서 z좌표가 0인 점 제거, body로 인식되지 않은 점 제거
+    points.erase(std::remove_if(points.begin(), points.end(), [](color_point_t x)->bool {return x.number == 0; }),
         points.end());
 
     k4a_image_release(point_cloud_image);
     k4a_image_release(depth_image);
+
+    k4abt_frame_release(body_frame);
+    k4a_image_release(body_index_map);
 
     const std::string& filename = "test";
     std::ofstream myfile;
@@ -171,7 +211,9 @@ int main() {
         myfile << "\n";
     }
 
+    k4a_device_close(device);
     myfile.close();
+    
     return 0;
 }
 

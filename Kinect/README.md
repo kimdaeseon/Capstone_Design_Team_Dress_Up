@@ -1,10 +1,3 @@
----
-tags: [Import-385e]
-title: "\U0001F457 CapstoneDesignTeamDressUp \U0001F457"
-created: '2022-04-17T08:28:20.570Z'
-modified: '2022-05-17T13:11:08.557Z'
----
-
 # 👗 Capstone_Design_Team_Dress_Up 👗
 
 ### :zero:gitignore 설명

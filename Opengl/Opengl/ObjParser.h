@@ -19,13 +19,17 @@ public:
 	}
 
 	void calculateFace() {
-		printf("%d", vertexIndices.size());
 		try {
 			for (unsigned int i = 0; i < vertexIndices.size(); i++) {
 				printf("%d \n", vertexIndices[i]);
 				unsigned int vertexIndex = vertexIndices[i];
 				Vertex tempVertex = vertex[vertexIndex - 1];
 				realVertex.push_back(tempVertex);
+			}
+			for (unsigned int i = 0; i < uvIndices.size(); i++) {
+				unsigned int uvIndex = uvIndices[i];
+				Vertex tempUv = texture[uvIndex - 1];
+				realTexture.push_back(tempUv);
 			}
 		}
 		catch(string err) {
@@ -43,7 +47,8 @@ public:
 			unsigned int normalIndex = normalIndices[i];
 			Vertex tempNormal = normal[normalIndex - 1];
 			realNormal.push_back(tempNormal);
-		}*/
+		}
+		*/
 	}
 
 	vector<Vertex> vertex;
@@ -94,8 +99,8 @@ private:
 		}
 		else if (strcmp(lineHeader, "f") == 0) {
 			unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
-			int matches = sscanf(line, "%s %d %d %d\n", lineHeader, &vertexIndex[0], &vertexIndex[1], &vertexIndex[2]);
-			if (matches != 4) {
+			int matches = sscanf(line, "%s %d/%d %d/%d %d/%d\n", lineHeader, &vertexIndex[0], &uvIndex[0], &vertexIndex[1], &uvIndex[1], &vertexIndex[2], &uvIndex[2]);
+			if (matches != 7) {
 				printf("File can't be read by our simple parser : ( Try exporting with other options\n");
 				return;
 			}
@@ -103,11 +108,11 @@ private:
 			vertexIndices.push_back(vertexIndex[0]);
 			vertexIndices.push_back(vertexIndex[1]);
 			vertexIndices.push_back(vertexIndex[2]);
-			/*
-			vertexIndices.push_back(vertexIndex[3]);
+
 			uvIndices.push_back(uvIndex[0]);
 			uvIndices.push_back(uvIndex[1]);
 			uvIndices.push_back(uvIndex[2]);
+			/*
 			uvIndices.push_back(uvIndex[3]);
 			normalIndices.push_back(normalIndex[0]);
 			normalIndices.push_back(normalIndex[1]);

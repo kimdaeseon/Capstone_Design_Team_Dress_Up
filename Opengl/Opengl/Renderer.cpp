@@ -446,7 +446,7 @@ void display()
 		glVertex3f(skeleton[j].X, skeleton[j].Y, skeleton[j].Z);
 	}
 	for (register int j = 0; j < realVertex.size(); j = j + 1) {
-		//glTexCoord2f(realTexture[j].X, realTexture[j].Y);
+		glTexCoord2f(realTexture[j].X, realTexture[j].Y);
 		glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
 		
 

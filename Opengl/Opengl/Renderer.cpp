@@ -413,12 +413,12 @@ void display()
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glEnable(GL_TEXTURE_2D);
-	// ÅØ½ºÃ³ wrapping/filtering ¿É¼Ç ¼³Á¤(ÇöÀç ¹ÙÀÎµùµÈ ÅØ½ºÃ³ °´Ã¼¿¡ ´ëÇØ)
+	// í…ìŠ¤ì²˜ wrapping/filtering ì˜µì…˜ ì„¤ì •(í˜„ì¬ ë°”ì¸ë”©ëœ í…ìŠ¤ì²˜ ê°ì²´ì— ëŒ€í•´)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// ÅØ½ºÃ³ ·Îµå ¹× »ı¼º
+	// í…ìŠ¤ì²˜ ë¡œë“œ ë° ìƒì„±
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load("1.jpg", &width, &height, &nrChannels, 0);
 	if (data)
@@ -440,11 +440,14 @@ void display()
 	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
 
 	//glBegin(GL_QUADS);
-	glBegin(GL_TRIANGLES);
+	glBegin(GL_POINTS);
 	for (register int j = 0; j < skeleton.size(); j++) {
 		glColor3f(1.0, 0, 0);
 		glVertex3f(skeleton[j].X, skeleton[j].Y, skeleton[j].Z);
 	}
+	glEnd();
+
+	glBegin(GL_TRIANGLES);
 	for (register int j = 0; j < realVertex.size(); j = j + 1) {
 		glTexCoord2f(realTexture[j].X, realTexture[j].Y);
 		glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
@@ -456,14 +459,14 @@ void display()
 }
 
 vector<string> split(string str, char Delimiter) {
-	istringstream iss(str);             // istringstream¿¡ strÀ» ´ã´Â´Ù.
-	string buffer;                      // ±¸ºĞÀÚ¸¦ ±âÁØÀ¸·Î Àı»èµÈ ¹®ÀÚ¿­ÀÌ ´ã°ÜÁö´Â ¹öÆÛ
+	istringstream iss(str);             // istringstreamì— strì„ ë‹´ëŠ”ë‹¤.
+	string buffer;                      // êµ¬ë¶„ìë¥¼ ê¸°ì¤€ìœ¼ë¡œ ì ˆì‚­ëœ ë¬¸ìì—´ì´ ë‹´ê²¨ì§€ëŠ” ë²„í¼
 
 	vector<string> result;
 
-	// istringstreamÀº istreamÀ» »ó¼Ó¹ŞÀ¸¹Ç·Î getlineÀ» »ç¿ëÇÒ ¼ö ÀÖ´Ù.
+	// istringstreamì€ istreamì„ ìƒì†ë°›ìœ¼ë¯€ë¡œ getlineì„ ì‚¬ìš©í•  ìˆ˜ ìˆë‹¤.
 	while (getline(iss, buffer, Delimiter)) {
-		result.push_back(buffer);               // Àı»èµÈ ¹®ÀÚ¿­À» vector¿¡ ÀúÀå
+		result.push_back(buffer);               // ì ˆì‚­ëœ ë¬¸ìì—´ì„ vectorì— ì €ì¥
 	}
 
 	return result;

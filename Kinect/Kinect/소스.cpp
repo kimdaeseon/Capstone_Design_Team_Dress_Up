@@ -1,5 +1,6 @@
 
 #include <k4a/k4a.h>
+#include <k4abt.h>
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -8,11 +9,8 @@
 
 struct color_point_t {
     float xyz[3];
-<<<<<<< HEAD
     int number;
-=======
-    int index;
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
+    int body;
 };
 
 int main() {
@@ -73,9 +71,11 @@ int main() {
         break;
     case K4A_WAIT_RESULT_TIMEOUT:
         printf("Timed out waiting for a capture\n");
+        k4a_device_close(device);
         return 0;
     case K4A_WAIT_RESULT_FAILED:
         printf("Failed to read a capture\n");
+        k4a_device_close(device);
         return 0;
     }
 
@@ -83,6 +83,7 @@ int main() {
     depth_image = k4a_capture_get_depth_image(capture);
     if (depth_image == 0) {
         printf("Failed to get depth image from capture\n");
+        k4a_device_close(device);
         return 0;
     }
 
@@ -91,17 +92,44 @@ int main() {
     int depth_image_height_pixels = k4a_image_get_height_pixels(depth_image);
 
     k4a_image_t point_cloud_image = NULL;
+    k4a_image_t body_index_map = NULL;
+
+    //create body tracker
+    k4abt_tracker_t body_tracker;
+    k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
+    if (K4A_RESULT_SUCCEEDED != k4abt_tracker_create(&calibration, tracker_config, &body_tracker)) {
+        printf("Failed to create body tracker\n"); 
+        k4a_device_close(device);
+        return 0;
+    }
+
+    //extract body frame
+    k4abt_frame_t body_frame = NULL;
+    k4abt_tracker_enqueue_capture(body_tracker,capture,TIMEOUT_IN_MS);
+    k4a_wait_result_t pop_frame_result = k4abt_tracker_pop_result(body_tracker, &body_frame, TIMEOUT_IN_MS);
+    if (K4A_RESULT_SUCCEEDED != pop_frame_result) {
+        printf("Failed to pop body frame!\n");
+        k4a_device_close(device);
+        return 0;
+    }
+
+    //create body index map image
+    body_index_map = k4abt_frame_get_body_index_map(body_frame);
+    uint8_t* body_index_map_data = (uint8_t*)(void*)k4a_image_get_buffer(body_index_map);
+    
 
     //create point cloud image
     if (K4A_RESULT_SUCCEEDED != k4a_image_create(K4A_IMAGE_FORMAT_CUSTOM, depth_image_width_pixels,
         depth_image_height_pixels, 3*depth_image_width_pixels * (int)sizeof(int16_t), &point_cloud_image)) {
         printf("Failed to create point cloud image\n");
+        k4a_device_close(device);
         return false;
     }
 
     //next step - point cloud generate
     if (K4A_RESULT_SUCCEEDED != k4a_transformation_depth_image_to_point_cloud(transformation, depth_image, K4A_CALIBRATION_TYPE_DEPTH, point_cloud_image)) {
         printf("Failed to compute point cloud\n");
+        k4a_device_close(device);
         return false;
     }
 
@@ -110,7 +138,6 @@ int main() {
 
     int width = k4a_image_get_width_pixels(point_cloud_image);
     int height = k4a_image_get_height_pixels(point_cloud_image);
-<<<<<<< HEAD
     int16_t *point_cloud_image_data = (int16_t *)(void *)k4a_image_get_buffer(point_cloud_image);
 
     int number = 1;
@@ -120,9 +147,9 @@ int main() {
         point.xyz[0] = point_cloud_image_data[3*i];
         point.xyz[1] = point_cloud_image_data[3*i+1];
         point.xyz[2] = point_cloud_image_data[3*i+2];
+        point.body = body_index_map_data[i];
 
-        //if (point.xyz[2] == 0) { continue; }
-        if (point.xyz[2] == 0) {
+        if (point.xyz[2] == 0 || point.body == K4ABT_BODY_INDEX_MAP_BACKGROUND) {
             point.number = 0;
         }
         else {
@@ -132,57 +159,52 @@ int main() {
         points.push_back(point); 
     }
 
+    //triangulation
     std::vector<int> triangle;
     for (int i = 0; i < width * (height-1)-1; i++) {
         //i번째 z좌표, (i+1)번째 z좌표, (i+width)번째 z좌표가 모두 0이 아닐 때 triangle생성
-        if (point_cloud_image_data[3*i+2] !=0 && point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] !=0) {
-            triangle.push_back(points[i].number);   
-            triangle.push_back(points[i + 1].number);   
-            triangle.push_back(points[i + width].number);       
+        if ((point_cloud_image_data[3*i+2] !=0 && point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] !=0) && 
+            (body_index_map_data[i]!=K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND &&body_index_map_data[i+width]!= K4ABT_BODY_INDEX_MAP_BACKGROUND)) {  
+            //반시계방향
+            triangle.push_back(points[i + 1].number);          
+            triangle.push_back(points[i].number);
+            triangle.push_back(points[i + width].number);
         }
 
         //i+1번째 z좌표, (i+width)번째 z좌표, (i+width+1)번째 z좌표가 모두 0이 아닐 때 triangle 생성
-        if (point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] != 0 && point_cloud_image_data[3*(i+width+1)+2] !=0) {
+        if ((point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] != 0 && point_cloud_image_data[3*(i+width+1)+2] !=0) && 
+            (body_index_map_data[i+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+width]!= K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+width+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND)) {
+            //반시계방향
             triangle.push_back(points[i + 1].number);   
             triangle.push_back(points[i + width].number);   
             triangle.push_back(points[i + width + 1].number);  
-=======
-    uint16_t *point_cloud_image_data = (uint16_t *)(void *)k4a_image_get_buffer(point_cloud_image);
-    std::vector<int> triangle;
-
-    for (int i = 0; i < width * height; i++) {
-        color_point_t point;
-        point.xyz[0] = point_cloud_image_data[3 * i + 0];
-        point.xyz[1] = point_cloud_image_data[3 * i + 1];
-        point.xyz[2] = point_cloud_image_data[3 * i + 2];
-        point.index = i;
-        //if (point.xyz[2] == 0) { continue; }
-
-        points.push_back(point); //0이 아닌것만 points에 push
-    }
-
-    for (int i = 0; i < width * (height-1)-1; i++) {
-        //i번째 z좌표, (i+1)번째 z좌표, (i+width)번째 z좌표가 모두 0이 아닐 때 triangle생성
-        if (point_cloud_image_data[3 * i + 2] != 0 && point_cloud_image_data[3 * i + 5] != 0 && point_cloud_image_data[3 * (i + width) + 2] != 0) {
-            triangle.push_back(i); //2d에서 i번째 index
-            triangle.push_back(i+1);//2d에서 i+1번째 index
-            triangle.push_back(i+width);//2d에서 i+width번째 index
-        }
-        //i+1번째 z좌표, (i+width)번째 z좌표, (i+width+1)번째 z좌표가 모두 0이 아닐 때 triangle생성
-        if (point_cloud_image_data[3 * (i + 1) + 2] != 0 && point_cloud_image_data[3 * (i + width) + 2] != 0 && point_cloud_image_data[3 * (i + 1 + width) + 2] != 0) {
-            triangle.push_back(i+1); //2d에서 i+1번째 index
-            triangle.push_back(i+width); //2d에서 i + width번째 index
-            triangle.push_back(i+width+1);//2d에서 i+width+1번째 index
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
         }
     }
  
-    //points vector에서 z좌표가 0인 점 제거
-    points.erase(std::remove_if(points.begin(), points.end(), [](color_point_t x)->bool {return x.xyz[2] == 0; }),
+    //points vector에서 z좌표가 0인 점 제거, body로 인식되지 않은 점 제거
+    points.erase(std::remove_if(points.begin(), points.end(), [](color_point_t x)->bool {return x.number == 0; }),
         points.end());
+
+    //Joint 좌표획득
+    k4abt_skeleton_t skeleton;
+    size_t num_bodies = k4abt_frame_get_num_bodies(body_frame);
+    if (num_bodies == 0) {
+        printf("Can't recognize body!\n");
+        k4a_device_close(device);
+        return 0;
+    }
+    printf("%zu bodies are detected!\n", num_bodies);
+
+    for (size_t i = 0; i < num_bodies; i++) {
+        k4abt_frame_get_body_skeleton(body_frame, i, &skeleton);
+        uint32_t id = k4abt_frame_get_body_id(body_frame, i);
+    }
 
     k4a_image_release(point_cloud_image);
     k4a_image_release(depth_image);
+
+    k4abt_frame_release(body_frame);
+    k4a_image_release(body_index_map);
 
     const std::string& filename = "test";
     std::ofstream myfile;
@@ -190,41 +212,35 @@ int main() {
     fullname << filename << "_" << ".obj";
     myfile.open(fullname.str());
 
-<<<<<<< HEAD
-=======
-    points.erase(std::remove_if(points.begin(), points.end(), [](color_point_t x)->bool {return x.xyz[2] == 0; }),
-        points.end());
-
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
     std::cout << points.size() << std::endl;
-
+    
+    //vertex 좌표 정보
     for (size_t i = 0; i < points.size(); ++i) {
         myfile << "v ";
         myfile << points[i].xyz[0] << " " << points[i].xyz[1] << " " << points[i].xyz[2];
-<<<<<<< HEAD
         myfile << "\n";
     }
 
+    //face 정보
     for (int i = 0; i < triangle.size()/3; i++) {
         myfile << "f ";
         myfile << triangle[3 * i] << " " << triangle[3 * i + 1] << " " << triangle[3 * i + 2];
-=======
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
         myfile << "\n";
     }
-    for (int i = 0; i < triangle.size()/3; i++) {
-        myfile << "f ";
-        myfile << triangle[3 * i] << " " << triangle[3 * i + 1] << " " << triangle[3 * i + 2] << "\n";
+
+    //Joint 좌표 정보
+    for (int i = 0; i < K4ABT_JOINT_COUNT; i++) {
+        myfile << "b ";
+        myfile << (float)skeleton.joints[i].position.xyz.x << " " << (float)skeleton.joints[i].position.xyz.y << " " << (float)skeleton.joints[i].position.xyz.z;
+        myfile << "\n";
     }
 
+    k4a_device_close(device);
     myfile.close();
+    
     return 0;
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
 /*
 #include <assert.h>
 #include <k4a/k4a.h>
@@ -235,14 +251,11 @@ int main() {
 #include <fstream>
 #include <sstream>
 #include <vector>
-<<<<<<< HEAD
 
 struct point {
     float xyz[3];
     int number;
 };
-=======
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
 
 static void create_xy_table(const k4a_calibration_t* calibration, k4a_image_t xy_table)
 {
@@ -310,15 +323,6 @@ static void generate_point_cloud(const k4a_image_t depth_image, const k4a_image_
     }
 }
 
-<<<<<<< HEAD
-=======
-static void triangulization(k4a_image_t point_cloud) {
-    k4a_float3_t* point_cloud_data = (k4a_float3_t*)(void*)k4a_image_get_buffer(point_cloud);
-    
-    std::vector<float> triangle;
-    
-}
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
 
 static void write_point_cloud(const char* file_name, const k4a_image_t point_cloud, int point_count, const k4abt_skeleton_t& skeleton, std::vector<float> triangle)
 {
@@ -340,10 +344,7 @@ static void write_point_cloud(const char* file_name, const k4a_image_t point_clo
 
     std::stringstream ss;
     ss << point_count << "\n";
-<<<<<<< HEAD
 
-=======
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
     for (int i = 0; i < width * height; i++)
     {
         //데이터가 숫자가 아니면 continue
@@ -361,7 +362,6 @@ static void write_point_cloud(const char* file_name, const k4a_image_t point_clo
             << (float)skeleton.joints[i].position.xyz.z << std::endl;
     }
     
-<<<<<<< HEAD
     std::vector<int>triangle;
 
     for(int i=0;i<width*height;i++){
@@ -369,23 +369,6 @@ static void write_point_cloud(const char* file_name, const k4a_image_t point_clo
         {
             triangle.push_back();
         }
-=======
-    
-    for (int i = 0; i < point_count-width; i++) {
-        if (isnan(point_cloud_data[i].xyz.x) || isnan(point_cloud_data[i].xyz.y) || isnan(point_cloud_data[i].xyz.z))
-        {
-            continue;
-        }
-
-        ss << "f " << i << " " << i + 1 << " " << i + width << "\n";
-    }
-    for (int i = 0; i < point_count-width-1; i++) {
-        if (isnan(point_cloud_data[i].xyz.x) || isnan(point_cloud_data[i].xyz.y) || isnan(point_cloud_data[i].xyz.z))
-        {
-            continue;
-        }
-        ss << "f " << i + 1 << " " << i + width << " " << i + width + 1 << "\n";
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
     }
 
 
@@ -515,13 +498,6 @@ int main(int argc, char** argv)
         calibration.depth_camera_calibration.resolution_width * (int)sizeof(k4a_float3_t),
         &point_cloud);
 
-    k4a_image_create(K4A_IMAGE_FORMAT_CUSTOM,
-        calibration.depth_camera_calibration.resolution_width,
-        calibration.depth_camera_calibration.resolution_height,
-        calibration.depth_camera_calibration.resolution_width * (int)sizeof(k4a_float2_t),
-        &body_index_map);
-
-
     if (K4A_RESULT_SUCCEEDED != k4a_device_start_cameras(device, &config))
     {
         printf("Failed to start cameras\n");
@@ -614,8 +590,4 @@ int main(int argc, char** argv)
     return returnCode;
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 0fe7808eab85801c874ea6e32bbc497a82bfac7f
 */

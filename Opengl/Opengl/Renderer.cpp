@@ -440,13 +440,17 @@ void display()
 	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
 
 	//glBegin(GL_QUADS);
-	glBegin(GL_TRIANGLES);
+	glBegin(GL_POINTS);
 	for (register int j = 0; j < skeleton.size(); j++) {
 		glColor3f(1.0, 0, 0);
 		glVertex3f(skeleton[j].X, skeleton[j].Y, skeleton[j].Z);
 	}
+	glEnd();
+
+	glBegin(GL_TRIANGLES);
 	for (register int j = 0; j < realVertex.size(); j = j + 1) {
 		//glTexCoord2f(realTexture[j].X, realTexture[j].Y);
+		glColor3f(0.5, 0.5, 0);
 		glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
 		
 

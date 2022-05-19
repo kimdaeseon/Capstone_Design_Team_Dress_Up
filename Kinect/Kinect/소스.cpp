@@ -11,6 +11,8 @@ struct color_point_t {
     float xyz[3];
     int number;
     int body;
+    int xth;
+    int yth;
 };
 
 int main() {
@@ -148,6 +150,8 @@ int main() {
         point.xyz[1] = point_cloud_image_data[3*i+1];
         point.xyz[2] = point_cloud_image_data[3*i+2];
         point.body = body_index_map_data[i];
+        point.xth = i % width;
+        point.yth = i /width;
 
         if (point.xyz[2] == 0 || point.body == K4ABT_BODY_INDEX_MAP_BACKGROUND) {
             point.number = 0;
@@ -161,6 +165,8 @@ int main() {
 
     //triangulation
     std::vector<int> triangle;
+    std::vector<std::pair<float,float>> texture;
+
     for (int i = 0; i < width * (height-1)-1; i++) {
         //i¹øÂ° zÁÂÇ¥, (i+1)¹øÂ° zÁÂÇ¥, (i+width)¹øÂ° zÁÂÇ¥°¡ ¸ðµÎ 0ÀÌ ¾Æ´Ò ¶§ triangle»ý¼º
         if ((point_cloud_image_data[3*i+2] !=0 && point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] !=0) && 
@@ -169,6 +175,10 @@ int main() {
             triangle.push_back(points[i + 1].number);          
             triangle.push_back(points[i].number);
             triangle.push_back(points[i + width].number);
+
+            texture.push_back({ (float)points[i + 1].xth / width , (float)points[i + 1].yth / height });
+            texture.push_back({ (float)points[i].xth / width , (float)points[i].yth / height });
+            texture.push_back({ (float)points[i + width].xth / width , (float)points[i + width].yth / height });
         }
 
         //i+1¹øÂ° zÁÂÇ¥, (i+width)¹øÂ° zÁÂÇ¥, (i+width+1)¹øÂ° zÁÂÇ¥°¡ ¸ðµÎ 0ÀÌ ¾Æ´Ò ¶§ triangle »ý¼º
@@ -178,6 +188,10 @@ int main() {
             triangle.push_back(points[i + 1].number);   
             triangle.push_back(points[i + width].number);   
             triangle.push_back(points[i + width + 1].number);  
+
+            texture.push_back({ (float)points[i + 1].xth / width , (float)points[i + 1].yth / height });
+            texture.push_back({ (float)points[i + width].xth / width , (float)points[i + width].yth / height });
+            texture.push_back({ (float)points[i + width + 1].xth / width , (float)points[i + width + 1].yth / height });
         }
     }
  
@@ -221,10 +235,18 @@ int main() {
         myfile << "\n";
     }
 
+    for (int i = 0; i < texture.size(); i++) {
+        myfile << "vt ";
+        myfile << texture[i].first << " " << texture[i].second;
+        myfile << "\n";
+    }
+
     //face Á¤º¸
     for (int i = 0; i < triangle.size()/3; i++) {
         myfile << "f ";
-        myfile << triangle[3 * i] << " " << triangle[3 * i + 1] << " " << triangle[3 * i + 2];
+        myfile << triangle[3 * i] << "/" << triangle[3*i] << " ";
+        myfile << triangle[3 * i + 1] << "/" << triangle[3 * i + 1] << " ";
+        myfile << triangle[3 * i + 2] << "/" << triangle[3 * i + 2];
         myfile << "\n";
     }
 

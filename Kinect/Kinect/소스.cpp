@@ -151,7 +151,7 @@ int main() {
         point.xyz[2] = point_cloud_image_data[3*i+2];
         point.body = body_index_map_data[i];
         point.xth = i % width;
-        point.yth = i /width;
+        point.yth = i / width;
 
         if (point.xyz[2] == 0 || point.body == K4ABT_BODY_INDEX_MAP_BACKGROUND) {
             point.number = 0;
@@ -175,10 +175,6 @@ int main() {
             triangle.push_back(points[i + 1].number);          
             triangle.push_back(points[i].number);
             triangle.push_back(points[i + width].number);
-
-            texture.push_back({ (float)points[i + 1].xth / width , (float)points[i + 1].yth / height });
-            texture.push_back({ (float)points[i].xth / width , (float)points[i].yth / height });
-            texture.push_back({ (float)points[i + width].xth / width , (float)points[i + width].yth / height });
         }
 
         //i+1¹øÂ° zÁÂÇ¥, (i+width)¹øÂ° zÁÂÇ¥, (i+width+1)¹øÂ° zÁÂÇ¥°¡ ¸ðµÎ 0ÀÌ ¾Æ´Ò ¶§ triangle »ý¼º
@@ -188,10 +184,6 @@ int main() {
             triangle.push_back(points[i + 1].number);   
             triangle.push_back(points[i + width].number);   
             triangle.push_back(points[i + width + 1].number);  
-
-            texture.push_back({ (float)points[i + 1].xth / width , (float)points[i + 1].yth / height });
-            texture.push_back({ (float)points[i + width].xth / width , (float)points[i + width].yth / height });
-            texture.push_back({ (float)points[i + width + 1].xth / width , (float)points[i + width + 1].yth / height });
         }
     }
  
@@ -234,10 +226,10 @@ int main() {
         myfile << points[i].xyz[0] << " " << points[i].xyz[1] << " " << points[i].xyz[2];
         myfile << "\n";
     }
-
-    for (int i = 0; i < texture.size(); i++) {
+    //texture Á¤º¸
+    for (int i = 0; i < points.size(); i++) {
         myfile << "vt ";
-        myfile << texture[i].first << " " << texture[i].second;
+        myfile << (float)points[i].xth / width << " " << (float)points[i].yth / height;
         myfile << "\n";
     }
 
@@ -250,12 +242,50 @@ int main() {
         myfile << "\n";
     }
 
-    //Joint ÁÂÇ¥ Á¤º¸
-    for (int i = 0; i < K4ABT_JOINT_COUNT; i++) {
-        myfile << "b ";
-        myfile << (float)skeleton.joints[i].position.xyz.x << " " << (float)skeleton.joints[i].position.xyz.y << " " << (float)skeleton.joints[i].position.xyz.z;
-        myfile << "\n";
-    }
+    //Joint ÁÂÇ¥ Á¤º¸(°¡¿îµ¥ °ñ¹Ý)
+    myfile << "b ";
+    myfile << (float)skeleton.joints[0].position.xyz.x << " " << (float)skeleton.joints[0].position.xyz.y << " " << (float)skeleton.joints[0].position.xyz.z;
+    myfile << "\n";
+
+    //¿ÞÂÊ ¾ûµ¢ÀÌ
+    myfile << "b ";
+    myfile << (float)skeleton.joints[18].position.xyz.x << " " << (float)skeleton.joints[18].position.xyz.y << " " << (float)skeleton.joints[18].position.xyz.z;
+    myfile << "\n";
+
+    //¿À¸¥ÂÊ ¾ûµ¢ÀÌ
+    myfile << "b ";
+    myfile << (float)skeleton.joints[22].position.xyz.x << " " << (float)skeleton.joints[22].position.xyz.y << " " << (float)skeleton.joints[22].position.xyz.z;
+    myfile << "\n";
+
+    //¿ÞÂÊ ¹ß¸ñ
+    myfile << "b ";
+    myfile << (float)skeleton.joints[20].position.xyz.x << " " << (float)skeleton.joints[20].position.xyz.y << " " << (float)skeleton.joints[20].position.xyz.z;
+    myfile << "\n";
+
+    //¿À¸¥ÂÊ ¹ß¸ñ
+    myfile << "b ";
+    myfile << (float)skeleton.joints[24].position.xyz.x << " " << (float)skeleton.joints[24].position.xyz.y << " " << (float)skeleton.joints[24].position.xyz.z;
+    myfile << "\n";
+
+    //°¡¿îµ¥ °ñ¹Ý
+    myfile << "b ";
+    myfile << (float)skeleton.joints[0].position.xyz.x << " " << (float)skeleton.joints[0].position.xyz.y << " " << (float)skeleton.joints[0].position.xyz.z;
+    myfile << "\n";
+
+    //¸ñ
+    myfile << "b ";
+    myfile << (float)skeleton.joints[3].position.xyz.x << " " << (float)skeleton.joints[3].position.xyz.y << " " << (float)skeleton.joints[3].position.xyz.z;
+    myfile << "\n";
+
+    //¿ÞÂÊ ¼Õ¸ñ
+    myfile << "b ";
+    myfile << (float)skeleton.joints[7].position.xyz.x << " " << (float)skeleton.joints[7].position.xyz.y << " " << (float)skeleton.joints[7].position.xyz.z;
+    myfile << "\n";
+
+    //¿À¸¥ÂÊ ¼Õ¸ñ
+    myfile << "b ";
+    myfile << (float)skeleton.joints[14].position.xyz.x << " " << (float)skeleton.joints[14].position.xyz.y << " " << (float)skeleton.joints[14].position.xyz.z;
+    myfile << "\n";
 
     k4a_device_close(device);
     myfile.close();

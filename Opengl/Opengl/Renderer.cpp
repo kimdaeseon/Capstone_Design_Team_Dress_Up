@@ -368,56 +368,91 @@ void InitializeWindow(int argc, char* argv[])
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
+float squareDistance(Vertex vertex1, Vertex vertex2) {
+	float differX = vertex1.X - vertex2.X;
+	float differY = vertex1.Y - vertex2.Y;
+	float differZ = vertex1.Z - vertex2.Z;
+	return differX * differX + differY * differY + differZ * differZ;
+}
+
+bool isTop(Vertex vertex, vector<Vertex> skeleton) {
+	Vertex leftWrist = skeleton[7];
+	Vertex rightWrist = skeleton[8];
+	Vertex neck = skeleton[6];
+	Vertex waist = skeleton[5];
+
+	float distanceOfWrist = squareDistance(leftWrist, rightWrist);
+	float distanceOfWaistAndNeck = squareDistance(neck, waist);
+
+	float distanceOfLeftWristAndVertex = squareDistance(leftWrist, vertex);
+	float distanceOfRightWristAndVertex = squareDistance(rightWrist, vertex);
+
+	float distanceOfNeckAndVertex = squareDistance(neck, vertex);
+	float distanceOfWaistAndVertex = squareDistance(waist, vertex);
+
+	if (distanceOfLeftWristAndVertex > distanceOfRightWristAndVertex) {
+		if (distanceOfRightWristAndVertex + distanceOfWrist < distanceOfLeftWristAndVertex) return false;
+	}
+	else {
+		if (distanceOfLeftWristAndVertex + distanceOfWrist < distanceOfRightWristAndVertex) return false;
+	}
+
+
+	if (distanceOfNeckAndVertex > distanceOfWaistAndVertex) {
+		if (distanceOfWaistAndVertex + distanceOfWaistAndNeck < distanceOfNeckAndVertex) return false;
+	}
+	else {
+		if (distanceOfNeckAndVertex + distanceOfWaistAndNeck < distanceOfWaistAndVertex) return false;
+	}
+
+	return true;
+}
 
 void display()
 {
-	// clear buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// set matrix
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glPushMatrix();
-	gluPerspective(20, 1, 1, 80);
-
-	glTranslatef(t[0], t[1], t[2] - 3.0f);
-
-	glScalef(1, 2, 3);
-
+	gluPerspective(60, 1, 0.1, 200);
+	glTranslatef(t[0], t[1], t[2] - 1.0f);
+	glScalef(1, 1, 1);
 	GLfloat m[4][4], m1[4][4];
 	build_rotmatrix(m, quat);
+	gluLookAt(0, 2.0, 2.0, 0, 0, 0, 0, 1.0, 0);
 
-	m1[0][0] = 1.0f;
-	m1[0][1] = 0.0f;
-	m1[0][2] = -0.3f;
-	m1[0][3] = 0.0f;
-
-	m1[1][0] = 0.0f;;
-	m1[1][1] = 1.0f;
-	m1[1][2] = 0.3f;
-	m1[1][3] = 0.0f;
-
-	m1[2][0] = 0.0f;
-	m1[2][1] = 0.0f;
-	m1[2][2] = 1.0f;
-	m1[2][3] = 0.0f;
-
-	m1[3][0] = 0.0f;
-	m1[3][1] = 0.0f;
-	m1[3][2] = 0.0f;
-	m1[3][3] = 1.0f;
-
+	GLfloat r, g, b;
 	glMultMatrixf(&m[0][0]);
 
-	glPointSize(7);
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glEnable(GL_TEXTURE_2D);
-	// 텍스처 wrapping/filtering 옵션 설정(현재 바인딩된 텍스처 객체에 대해)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	GLfloat diffuse0[4] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat ambient0[4] = { 0.5, 0.5, 0.5, 1.0 };
+	GLfloat specular0[4] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat light0_pos[4] = { 2.0, 2.0, 2.0, 1.0 };
+
+	glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
+
+
+	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.2);
+	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.1);
+	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.05);
+
+	//빨간색 플라스틱과 유사한 재질을 다음과 같이 정의
+	GLfloat mat_ambient[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	GLfloat mat_diffuse[4] = { 0.6f, 0.6f, 0.6f, 1.0f };
+	GLfloat mat_specular[4] = { 0.8f, 0.6f, 0.6f, 1.0f };
+	GLfloat mat_shininess = 32.0;
+
+	// 폴리곤의 앞면의 재질을 설정 
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
+
 	// 텍스처 로드 및 생성
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load("1.jpg", &width, &height, &nrChannels, 0);
@@ -431,6 +466,14 @@ void display()
 	}
 	stbi_image_free(data);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glEnable(GL_TEXTURE_2D);
+
+
 	vector<Vertex> skeleton = objParser.skeleton;
 	vector<Vertex> realVertex = objParser.realVertex;
 	vector<Vertex> realNormal = objParser.realNormal;
@@ -438,20 +481,35 @@ void display()
 
 
 	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-
+	/*
 	//glBegin(GL_QUADS);
 	glBegin(GL_POINTS);
+	glPointSize(100);
+	printf("size = %d\n", skeleton.size());
 	for (register int j = 0; j < skeleton.size(); j++) {
-		glColor3f(1.0, 0, 0);
+		glColor3f(1.0, 1.0, 1.0);
 		glVertex3f(skeleton[j].X, skeleton[j].Y, skeleton[j].Z);
 	}
 	glEnd();
-
+	*/
 	glBegin(GL_TRIANGLES);
-	for (register int j = 0; j < realVertex.size(); j = j + 1) {
-		glTexCoord2f(realTexture[j].X, realTexture[j].Y);
-		glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
-		
+	for (register int j = 0; j < realVertex.size(); j = j + 3) {
+		if (isTop(realVertex[j], skeleton) && isTop(realVertex[j + 1], skeleton) && isTop(realVertex[j + 2], skeleton)) {
+			glTexCoord2f(realTexture[j].X, realTexture[j].Y);
+			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
+			glTexCoord2f(realTexture[j + 1].X, realTexture[j + 1].Y);
+			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
+			glTexCoord2f(realTexture[j + 2].X, realTexture[j + 2].Y);
+			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
+		}
+		else {
+			glColor3f(1.0, 0, 0);
+			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
+			glColor3f(1.0, 0, 0);
+			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
+			glColor3f(1.0, 0, 0);
+			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
+		}
 
 	}
 	glEnd();

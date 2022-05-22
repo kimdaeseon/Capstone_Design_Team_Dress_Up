@@ -21,7 +21,6 @@ public:
 	void calculateFace() {
 		try {
 			for (unsigned int i = 0; i < vertexIndices.size(); i++) {
-				printf("%d \n", vertexIndices[i]);
 				unsigned int vertexIndex = vertexIndices[i];
 				Vertex tempVertex = vertex[vertexIndex - 1];
 				realVertex.push_back(tempVertex);

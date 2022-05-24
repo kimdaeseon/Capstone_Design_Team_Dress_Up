@@ -143,6 +143,26 @@ int main() {
     int16_t *point_cloud_image_data = (int16_t *)(void *)k4a_image_get_buffer(point_cloud_image);
 
     int number = 1;
+    int left = 1000, right = 0;
+    int top = 1000, bottom = 0;
+
+    for (int i = 0; i < width * height; i++) {
+        if (body_index_map_data[i] == K4ABT_BODY_INDEX_MAP_BACKGROUND) {
+            continue;
+        }
+        if (left > (i%width)) {
+            left = (i % width);
+        }
+        if (right < (i%width)) {
+            right = (i % width);
+        }
+        if (top > (i/width)) {
+            top = (i / width);
+        }
+        if (bottom < (i / width)) {
+            bottom = (i / width);
+        }
+    }
 
     for (int i = 0; i < width * height; i++) {
         color_point_t point;
@@ -229,7 +249,7 @@ int main() {
     //texture Á¤º¸
     for (int i = 0; i < points.size(); i++) {
         myfile << "vt ";
-        myfile << (float)points[i].xth / width << " " << (float)points[i].yth / height;
+        myfile << (float)(points[i].xth-left) / (right-left) << " " << (float)(points[i].yth - top) / (bottom-top);
         myfile << "\n";
     }
 

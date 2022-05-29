@@ -8,7 +8,6 @@
 #include <fstream>
 
 ObjParser objParser = ObjParser();
-
 void draw_center(void)
 {
 	glBegin(GL_LINES);
@@ -156,6 +155,7 @@ void mouse(int button, int state, int x, int y)
 		}
 		else if (button == GLUT_MIDDLE_BUTTON)
 		{
+			//trcon = trcon + 1;
 			trans_z = y;
 		}
 		else if (button == 3 || button == 4)
@@ -354,19 +354,24 @@ void InitializeWindow(int argc, char* argv[])
 	glutMotionFunc(motion);
 	glutMouseFunc(mouse);
 	glutCloseFunc(close);
+	//GLuint image = load   ("./my_texture.bmp");
+
+	//glBindTexture(1,)
 
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
 	// bind textures
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glEnable(GL_DEPTH_TEST);
+
 	reshape(1000, 1000);
 
-	glGenTextures(1, &dispBindIndex);
+	/*glGenTextures(1, &dispBindIndex);
 	glBindTexture(GL_TEXTURE_2D, dispBindIndex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
 }
+
 
 float squareDistance(Vertex vertex1, Vertex vertex2) {
 	float differX = vertex1.X - vertex2.X;
@@ -408,6 +413,37 @@ bool isTop(Vertex vertex, vector<Vertex> skeleton) {
 	return true;
 }
 
+Vertex crossDot(Vertex v1, Vertex v2) {
+	float v11 = v1.X;
+	float v12 = v1.Y;
+	float v13 = v1.Z;
+
+	float v21 = v2.X;
+	float v22 = v2.Y;
+	float v23 = v2.Z;
+
+	Vertex result;
+	result.X = v12 * v23 - v13 * v22;
+	result.Y = v13 * v21 - v11 * v23;
+	result.Z = v11 * v22 - v12 * v21;
+
+	return result;
+}
+
+Vertex calculateNormal(Vertex v1, Vertex v2, Vertex v3) {
+	Vertex va, vb;
+
+	va.X = v2.X - v1.X;
+	va.Y = v2.Y - v1.Y;
+	va.Z = v2.Z - v1.Z;
+
+	vb.X = v3.X - v1.X;
+	vb.Y = v3.Y - v1.Y;
+	vb.Z = v3.Z - v1.Z;
+
+	return crossDot(va, vb);
+}
+
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -424,41 +460,74 @@ void display()
 	glMultMatrixf(&m[0][0]);
 
 
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	GLfloat diffuse0[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat ambient0[4] = { 0.5, 0.5, 0.5, 1.0 };
-	GLfloat specular0[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat light0_pos[4] = { 2.0, 2.0, 2.0, 1.0 };
+	// test #1
 
-	glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
+	glEnable(GL_LIGHTING);
+
+	glEnable(GL_LIGHT0);
+	GLfloat diffuse0[4] = { 0.9, 0.9, 0.9, 100.0 };
+	GLfloat ambient0[4] = { 0.5, 0.5, 0.5, 100.0 };
+	GLfloat specular0[4] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat light0_pos[4] = { -2.0, 2.0, 2.0, 1.0 };
+	//GLfloat light0_pos[4] = { 0.3, 0.3, 0.5, 1.0 };
+	//GLfloat spot_dir[3] = { -2.0f, 0.0f, -1.0f };
+
+	glEnable(GL_LIGHT1);
+	GLfloat diffuse1[4] = { 1.0, 1.0, 1.0, 10.0 };
+	GLfloat ambient1[4] = { 0.5, 0.5, 0.5, 10.0 };
+	GLfloat specular1[4] = { 1.0, 1.0, 1.0, 10.0 };
+	GLfloat light1_pos[4] = { -2.0, 2.0, -2.0, 10.0 };
+
+
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
+	glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
+	//glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spot_dir);
+	//glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 50.0);
+	//glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 1.0);
 
+	glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
+	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specular1);
+
+
+
+	// test #2
 
 	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.2);
 	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.1);
 	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.05);
 
-	//빨간색 플라스틱과 유사한 재질을 다음과 같이 정의
-	GLfloat mat_ambient[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	GLfloat mat_diffuse[4] = { 0.6f, 0.6f, 0.6f, 1.0f };
-	GLfloat mat_specular[4] = { 0.8f, 0.6f, 0.6f, 1.0f };
-	GLfloat mat_shininess = 32.0;
 
-	// 폴리곤의 앞면의 재질을 설정 
+	// test #3
+
+	glShadeModel(GL_SMOOTH);
+	//glShadeModel(GL_FLAT);
+
+
+	// test #4
+	//빨간색 플라스틱과 유사한 재질을 다음과 같이 정의
+	GLfloat mat_ambient[4] = { 0.15f, 0.23f, 0.11f, 100.0f };
+	GLfloat mat_diffuse[4] = { 0.3f, 0.4f, 0.3f, 100.0f };
+	GLfloat mat_specular[4] = { 0.7f, 0.8f, 0.7f, 100.0f };
+	GLfloat mat_shininess = 256.0;
+	//
+	//// 폴리곤의 앞면의 재질을 설정 
 	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 	glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
 
+
+
 	// 텍스처 로드 및 생성
 	int width, height, nrChannels;
-	unsigned char* data = stbi_load("1.jpg", &width, &height, &nrChannels, 0);
+	unsigned char* data = stbi_load("2.png", &width, &height, &nrChannels, 0);
 	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, 3, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 	}
 	else
 	{
@@ -471,48 +540,44 @@ void display()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glEnable(GL_TEXTURE_2D);
 
+
+	glEnable(GL_TEXTURE_2D);
 
 	vector<Vertex> skeleton = objParser.skeleton;
 	vector<Vertex> realVertex = objParser.realVertex;
 	vector<Vertex> realNormal = objParser.realNormal;
 	vector<Vertex> realTexture = objParser.realTexture;
 
-
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-	/*
-	//glBegin(GL_QUADS);
-	glBegin(GL_POINTS);
-	glPointSize(100);
-	printf("size = %d\n", skeleton.size());
-	for (register int j = 0; j < skeleton.size(); j++) {
-		glColor3f(1.0, 1.0, 1.0);
-		glVertex3f(skeleton[j].X, skeleton[j].Y, skeleton[j].Z);
-	}
-	glEnd();
-	*/
+	// 
+	glEnable(GL_AUTO_NORMAL);
+	glEnable(GL_NORMALIZE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glFrontFace(GL_CCW);
+	glEnable(GL_TEXTURE_2D);
 	glBegin(GL_TRIANGLES);
+	
 	for (register int j = 0; j < realVertex.size(); j = j + 3) {
 		if (isTop(realVertex[j], skeleton) && isTop(realVertex[j + 1], skeleton) && isTop(realVertex[j + 2], skeleton)) {
+			Vertex normal = calculateNormal(realVertex[j], realVertex[j + 1], realVertex[j + 2]);
 			glTexCoord2f(realTexture[j].X, realTexture[j].Y);
 			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
 			glTexCoord2f(realTexture[j + 1].X, realTexture[j + 1].Y);
 			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
 			glTexCoord2f(realTexture[j + 2].X, realTexture[j + 2].Y);
 			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
 		}
 		else {
-			glColor3f(1.0, 0, 0);
 			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
-			glColor3f(1.0, 0, 0);
 			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
-			glColor3f(1.0, 0, 0);
 			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
 		}
-
 	}
 	glEnd();
+
 	glutSwapBuffers();
 }
 
@@ -534,7 +599,6 @@ vector<string> split(string str, char Delimiter) {
 
 int main(int argc, char* argv[])
 {
-
 	try {
 		SocketServer sock = SocketServer();
 		vector<string> lines;

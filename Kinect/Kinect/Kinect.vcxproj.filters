@@ -24,4 +24,9 @@
     <None Include="dnn_model_2_0_op11.onnx" />
     <None Include="dnn_model_2_0_lite_op11.onnx" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="KinectClient.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

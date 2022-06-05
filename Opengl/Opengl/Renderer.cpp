@@ -6,6 +6,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 ObjParser objParser = ObjParser();
 void draw_center(void)
@@ -413,6 +414,46 @@ bool isTop(Vertex vertex, vector<Vertex> skeleton) {
 	return true;
 }
 
+/*
+가운데 골반 점
+왼쪽 골반 점
+오른쪽 골반 점
+왼쪽 발목점
+오른쪽 발목점
+
+허리점
+목점
+왼쪽 손목
+오른쪽 손목
+*/
+
+bool isBottom(Vertex vertex, vector<Vertex> skeleton) {
+	Vertex middlePelvis = skeleton[0];
+	Vertex leftPelvis = skeleton[2];
+	Vertex rightPelvis = skeleton[1];
+
+	Vertex leftAnkle = skeleton[3];
+	Vertex rightAnkle = skeleton[4];
+
+	float weight = 0.6;
+
+	float rangeOfPelvis = abs(leftPelvis.X - rightPelvis.X);
+
+	float leftLimit = leftPelvis.X - rangeOfPelvis * weight;
+	float rightLimit = rightPelvis.X + rangeOfPelvis * weight;
+
+	float topLimit = (leftPelvis.Y > rightPelvis.Y) ? leftPelvis.Y : rightPelvis.Y;
+	float bottomLimit = (leftAnkle.Y < rightAnkle.Y) ? leftAnkle.Y : rightAnkle.Y;
+
+	if (vertex.X >= leftLimit && vertex.X <= rightLimit) {
+		if (vertex.Y >= bottomLimit && vertex.Y <= topLimit) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 Vertex crossDot(Vertex v1, Vertex v2) {
 	float v11 = v1.X;
 	float v12 = v1.Y;
@@ -444,6 +485,19 @@ Vertex calculateNormal(Vertex v1, Vertex v2, Vertex v3) {
 	return crossDot(va, vb);
 }
 
+GLfloat* getAmbient(Vertex color) {
+	GLfloat result[4] = { color.X, color.Y, color.Z, 1 };
+	return result;
+}
+GLfloat* getDiffuse(Vertex color) {
+	GLfloat result[4] = { color.X, color.Y, color.Z, 1 };
+	return result;
+}
+GLfloat* getSpecular(Vertex color) {
+	GLfloat result[4] = { color.X, color.Y, color.Z, 1 };
+	return result;
+}
+
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -461,7 +515,6 @@ void display()
 
 
 	// test #1
-
 	glEnable(GL_LIGHTING);
 
 	glEnable(GL_LIGHT0);
@@ -506,12 +559,11 @@ void display()
 	glShadeModel(GL_SMOOTH);
 	//glShadeModel(GL_FLAT);
 
-
 	// test #4
 	//빨간색 플라스틱과 유사한 재질을 다음과 같이 정의
-	GLfloat mat_ambient[4] = { 0.15f, 0.23f, 0.11f, 100.0f };
-	GLfloat mat_diffuse[4] = { 0.3f, 0.4f, 0.3f, 100.0f };
-	GLfloat mat_specular[4] = { 0.7f, 0.8f, 0.7f, 100.0f };
+	GLfloat mat_ambient[4] = { 1, 1, 1, 100 };
+	GLfloat mat_diffuse[4] = { 1, 1, 1, 100.0f };
+	GLfloat mat_specular[4] = { 1, 1, 1, 100.0f };
 	GLfloat mat_shininess = 256.0;
 	//
 	//// 폴리곤의 앞면의 재질을 설정 
@@ -519,8 +571,6 @@ void display()
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 	glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
-
-
 
 	// 텍스처 로드 및 생성
 	int width, height, nrChannels;
@@ -546,7 +596,7 @@ void display()
 
 	vector<Vertex> skeleton = objParser.skeleton;
 	vector<Vertex> realVertex = objParser.realVertex;
-	vector<Vertex> realNormal = objParser.realNormal;
+	vector<Vertex> realColor = objParser.realColor;
 	vector<Vertex> realTexture = objParser.realTexture;
 
 	// 
@@ -558,22 +608,100 @@ void display()
 	glBegin(GL_TRIANGLES);
 	
 	for (register int j = 0; j < realVertex.size(); j = j + 3) {
-		if (isTop(realVertex[j], skeleton) && isTop(realVertex[j + 1], skeleton) && isTop(realVertex[j + 2], skeleton)) {
+		bool isTopFace = isTop(realVertex[j], skeleton) && isTop(realVertex[j + 1], skeleton) && isTop(realVertex[j + 2], skeleton);
+		bool isBottomFace = isBottom(realVertex[j], skeleton) && isBottom(realVertex[j + 1], skeleton) && isBottom(realVertex[j + 2], skeleton);
+		if (isTopFace && !isBottomFace) {
 			Vertex normal = calculateNormal(realVertex[j], realVertex[j + 1], realVertex[j + 2]);
+
+			glColor3f(1, 1, 1);
 			glTexCoord2f(realTexture[j].X, realTexture[j].Y);
 			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
 			glNormal3f(normal.X, normal.Y, normal.Z);
+
+			glColor3f(1, 1, 1);
 			glTexCoord2f(realTexture[j + 1].X, realTexture[j + 1].Y);
 			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
 			glNormal3f(normal.X, normal.Y, normal.Z);
+
+			glColor3f(1, 1, 1);
 			glTexCoord2f(realTexture[j + 2].X, realTexture[j + 2].Y);
 			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
 			glNormal3f(normal.X, normal.Y, normal.Z);
 		}
-		else {
+	}
+	glEnd();
+
+	// 텍스처 로드 및 생성
+	data = stbi_load("4.jpeg", &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, 3, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+
+	glEnable(GL_TEXTURE_2D);
+
+	glBegin(GL_TRIANGLES);
+
+	for (register int j = 0; j < realVertex.size(); j = j + 3) {
+		bool isTopFace = isTop(realVertex[j], skeleton) && isTop(realVertex[j + 1], skeleton) && isTop(realVertex[j + 2], skeleton);
+		bool isBottomFace = isBottom(realVertex[j], skeleton) && isBottom(realVertex[j + 1], skeleton) && isBottom(realVertex[j + 2], skeleton);
+		if (!isTopFace && isBottomFace) {
+			Vertex normal = calculateNormal(realVertex[j], realVertex[j + 1], realVertex[j + 2]);
+			glColor3f(1, 1, 1);
+			glTexCoord2f(realTexture[j].X, realTexture[j].Y);
 			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
+
+			glColor3f(1, 1, 1);
+			glTexCoord2f(realTexture[j + 1].X, realTexture[j + 1].Y);
 			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
+
+			glColor3f(1, 1, 1);
+			glTexCoord2f(realTexture[j + 2].X, realTexture[j + 2].Y);
 			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
+		}
+	}
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+
+	glBegin(GL_TRIANGLES);
+
+	GLfloat otherAmbient[4] = { 0.1, 0.1, 0, 1 };
+	for (register int j = 0; j < realVertex.size(); j = j + 3) {
+		bool isTopFace = isTop(realVertex[j], skeleton) && isTop(realVertex[j + 1], skeleton) && isTop(realVertex[j + 2], skeleton);
+		bool isBottomFace = isBottom(realVertex[j], skeleton) && isBottom(realVertex[j + 1], skeleton) && isBottom(realVertex[j + 2], skeleton);
+		if (!isTopFace && !isBottomFace) {
+			Vertex normal = calculateNormal(realVertex[j], realVertex[j + 1], realVertex[j + 2]);
+
+			glColor3f(realColor[j].X, realColor[j].Y, realColor[j].Z);
+			glTexCoord2f(realTexture[j].X, realTexture[j].Y);
+			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
+
+			glColor3f(realColor[j + 1].X, realColor[j + 1].Y, realColor[j + 1].Z);
+			glTexCoord2f(realTexture[j + 1].X, realTexture[j + 1].Y);
+			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
+
+			glColor3f(realColor[j + 2].X, realColor[j + 2].Y, realColor[j + 2].Z);
+			glTexCoord2f(realTexture[j + 2].X, realTexture[j + 2].Y);
+			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
+			glNormal3f(normal.X, normal.Y, normal.Z);
 		}
 	}
 	glEnd();

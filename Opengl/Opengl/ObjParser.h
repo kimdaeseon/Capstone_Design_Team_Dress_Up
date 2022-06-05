@@ -30,6 +30,11 @@ public:
 				Vertex tempUv = texture[uvIndex - 1];
 				realTexture.push_back(tempUv);
 			}
+			for (unsigned int i = 0; i < colorIndices.size(); i++) {
+				unsigned int colorIndex = colorIndices[i];
+				Vertex tempColor = color[colorIndex - 1];
+				realColor.push_back(tempColor);
+			}
 		}
 		catch(string err) {
 			return;
@@ -51,17 +56,17 @@ public:
 	}
 
 	vector<Vertex> vertex;
-	vector<Vertex> normal;
+	vector<Vertex> color;
 	vector<Vertex> texture;
 
 	vector<Vertex> skeleton;
 
 	vector<int> vertexIndices;
 	vector<int> uvIndices;
-	vector<int> normalIndices;
+	vector<int> colorIndices;
 
 	vector<Vertex> realVertex;
-	vector<Vertex> realNormal;
+	vector<Vertex> realColor;
 	vector<Vertex> realTexture;
 private:
 
@@ -89,17 +94,17 @@ private:
 			tempVertex.Y = y;
 			texture.push_back(tempVertex);
 		}
-		else if (strcmp(lineHeader, "vn") == 0) {
+		else if (strcmp(lineHeader, "c") == 0) {
 			Vertex tempVertex;
-			tempVertex.X = x / scale;
-			tempVertex.Y = y / scale;
-			tempVertex.Z = z / scale;
-			normal.push_back(tempVertex);
+			tempVertex.X = x / 255;
+			tempVertex.Y = y / 255;
+			tempVertex.Z = z / 255;
+			color.push_back(tempVertex);
 		}
 		else if (strcmp(lineHeader, "f") == 0) {
-			unsigned int vertexIndex[4], uvIndex[4], normalIndex[4];
-			int matches = sscanf(line, "%s %d/%d %d/%d %d/%d\n", lineHeader, &vertexIndex[0], &uvIndex[0], &vertexIndex[1], &uvIndex[1], &vertexIndex[2], &uvIndex[2]);
-			if (matches != 7) {
+			unsigned int vertexIndex[4], uvIndex[4], colorIndex[4];
+			int matches = sscanf(line, "%s %d/%d/%d %d/%d/%d %d/%d/%d\n", lineHeader, &vertexIndex[0], &uvIndex[0], &colorIndex[0], &vertexIndex[1], &uvIndex[1], &colorIndex[1], &vertexIndex[2], &uvIndex[2], &colorIndex[2]);
+			if (matches != 10) {
 				printf("File can't be read by our simple parser : ( Try exporting with other options\n");
 				return;
 			}
@@ -111,6 +116,11 @@ private:
 			uvIndices.push_back(uvIndex[0]);
 			uvIndices.push_back(uvIndex[1]);
 			uvIndices.push_back(uvIndex[2]);
+
+			colorIndices.push_back(colorIndex[0]);
+			colorIndices.push_back(colorIndex[1]);
+			colorIndices.push_back(colorIndex[2]);
+
 			/*
 			uvIndices.push_back(uvIndex[3]);
 			normalIndices.push_back(normalIndex[0]);
@@ -120,7 +130,7 @@ private:
 			*/
 		}
 	}
-
+	/*
 	void parsing(const char* line) {
 		float x, y, z;
 		char lineHeader[128];
@@ -173,7 +183,7 @@ private:
 			//normalIndices.push_back(normalIndex[3]);
 		}
 	}
-
+	*/
 
 };
 

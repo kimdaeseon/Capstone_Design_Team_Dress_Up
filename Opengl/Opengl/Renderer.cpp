@@ -513,25 +513,32 @@ void display()
 	GLfloat r, g, b;
 	glMultMatrixf(&m[0][0]);
 
-
+	
 	// test #1
 	glEnable(GL_LIGHTING);
 
+	
 	glEnable(GL_LIGHT0);
-	GLfloat diffuse0[4] = { 0.9, 0.9, 0.9, 100.0 };
-	GLfloat ambient0[4] = { 0.5, 0.5, 0.5, 100.0 };
-	GLfloat specular0[4] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat diffuse0[4] = { 1, 1, 1, 1.0 };
+	GLfloat ambient0[4] = { 1, 1, 1, 1.0 };
+	GLfloat specular0[4] = { 1, 1, 1, 1.0 };
 	GLfloat light0_pos[4] = { -2.0, 2.0, 2.0, 1.0 };
 	//GLfloat light0_pos[4] = { 0.3, 0.3, 0.5, 1.0 };
 	//GLfloat spot_dir[3] = { -2.0f, 0.0f, -1.0f };
-
+	
+	/*
+	GLfloat diffuse0[4] = { 0.984313, 0.807843, 0.694117, 1.0 };
+	GLfloat ambient0[4] = { 0.984313, 0.807843, 0.694117, 1.0 };
+	GLfloat specular0[4] = { 0.984313, 0.807843, 0.694117, 1.0 };
+	*/
+	/*
 	glEnable(GL_LIGHT1);
-	GLfloat diffuse1[4] = { 1.0, 1.0, 1.0, 10.0 };
-	GLfloat ambient1[4] = { 0.5, 0.5, 0.5, 10.0 };
-	GLfloat specular1[4] = { 1.0, 1.0, 1.0, 10.0 };
-	GLfloat light1_pos[4] = { -2.0, 2.0, -2.0, 10.0 };
-
-
+	GLfloat diffuse1[4] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat ambient1[4] = { 0.5, 0.5, 0.5, 1.0 };
+	GLfloat specular1[4] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat light1_pos[4] = { 2.0, 2.0, 2.0, 1.0 };
+	*/
+	
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
@@ -539,12 +546,12 @@ void display()
 	//glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spot_dir);
 	//glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 50.0);
 	//glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 1.0);
-
-	glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
+	
+	/*glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
 	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
 	glLightfv(GL_LIGHT1, GL_SPECULAR, specular1);
-
+	*/
 
 
 	// test #2
@@ -552,18 +559,19 @@ void display()
 	glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.2);
 	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.1);
 	glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.05);
-
-
 	// test #3
 
 	glShadeModel(GL_SMOOTH);
 	//glShadeModel(GL_FLAT);
-
+	
 	// test #4
 	//빨간색 플라스틱과 유사한 재질을 다음과 같이 정의
-	GLfloat mat_ambient[4] = { 1, 1, 1, 100 };
-	GLfloat mat_diffuse[4] = { 1, 1, 1, 100.0f };
-	GLfloat mat_specular[4] = { 1, 1, 1, 100.0f };
+
+	float number = 0.5;
+
+	GLfloat mat_ambient[4] = { number, number, number, 1 };
+	GLfloat mat_diffuse[4] = { number, number, number, 1 };
+	GLfloat mat_specular[4] = { number, number, number, 1 };
 	GLfloat mat_shininess = 256.0;
 	//
 	//// 폴리곤의 앞면의 재질을 설정 
@@ -571,7 +579,7 @@ void display()
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 	glMaterialf(GL_FRONT, GL_SHININESS, mat_shininess);
-
+	
 	// 텍스처 로드 및 생성
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load("2.png", &width, &height, &nrChannels, 0);
@@ -632,7 +640,7 @@ void display()
 	glEnd();
 
 	// 텍스처 로드 및 생성
-	data = stbi_load("4.jpeg", &width, &height, &nrChannels, 0);
+	data = stbi_load("1.jpg", &width, &height, &nrChannels, 0);
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, 3, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -687,17 +695,35 @@ void display()
 		bool isBottomFace = isBottom(realVertex[j], skeleton) && isBottom(realVertex[j + 1], skeleton) && isBottom(realVertex[j + 2], skeleton);
 		if (!isTopFace && !isBottomFace) {
 			Vertex normal = calculateNormal(realVertex[j], realVertex[j + 1], realVertex[j + 2]);
-
+			
+			GLfloat spec[4] = {realColor[j].X, realColor[j].Y, realColor[j].Z, 0.50f};
+			GLfloat ambi[4] = { realColor[j].X * 0.6, realColor[j].Y * 0.6, realColor[j].Z * 0.6, 0.50f };
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spec);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, ambi);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, spec);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spec);
 			glColor3f(realColor[j].X, realColor[j].Y, realColor[j].Z);
 			glTexCoord2f(realTexture[j].X, realTexture[j].Y);
 			glVertex3f(realVertex[j].X, realVertex[j].Y, realVertex[j].Z);
 			glNormal3f(normal.X, normal.Y, normal.Z);
 
+			GLfloat spec1[4] = { realColor[j + 1].X, realColor[j + 1].Y, realColor[j + 1].Z, 0.50f };
+			GLfloat ambi1[4] = { realColor[j + 1].X * 0.6, realColor[j + 1].Y * 0.6, realColor[j + 1].Z * 0.6, 0.50f };
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spec1);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, ambi1);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, spec1);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spec1);
 			glColor3f(realColor[j + 1].X, realColor[j + 1].Y, realColor[j + 1].Z);
 			glTexCoord2f(realTexture[j + 1].X, realTexture[j + 1].Y);
 			glVertex3f(realVertex[j + 1].X, realVertex[j + 1].Y, realVertex[j + 1].Z);
 			glNormal3f(normal.X, normal.Y, normal.Z);
 
+			GLfloat spec2[4] = { realColor[j + 2].X, realColor[j + 2].Y, realColor[j + 2].Z, 0.50f };
+			GLfloat ambi2[4] = { realColor[j + 2].X * 0.6, realColor[j + 2].Y * 0.6, realColor[j + 2].Z * 0.6, 0.50f };
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spec2);
+			glMaterialfv(GL_FRONT, GL_AMBIENT, ambi2);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, spec2);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, spec2);
 			glColor3f(realColor[j + 2].X, realColor[j + 2].Y, realColor[j + 2].Z);
 			glTexCoord2f(realTexture[j + 2].X, realTexture[j + 2].Y);
 			glVertex3f(realVertex[j + 2].X, realVertex[j + 2].Y, realVertex[j + 2].Z);
@@ -706,6 +732,25 @@ void display()
 	}
 	glEnd();
 
+	
+	glBegin(GL_QUADS);
+
+	glColor3f(1, 1, 1);
+	glVertex3f(-2, 2, 6);
+	
+	glColor3f(1, 1, 1);
+	glVertex3f(2, 2, 6);
+	
+	glColor3f(1, 1, 1);
+	glVertex3f(2, -2, 6);
+
+	glColor3f(1, 1, 1);
+	glVertex3f(-2, -2, 6);
+
+
+
+	glEnd();
+	
 	glutSwapBuffers();
 }
 

@@ -33,6 +33,6 @@
 4. :heavy_check_mark: 사진 촬영해서 정점 가져오기
 5. :heavy_check_mark: 신체 관절좌표 가져오기
 6. :small_red_triangle: 3D 모델링
-7. :x: 모델에 일부분에 텍스쳐 입히기
-8. :x: 사용자 입력에 따라 텍스쳐 변경하기
-9. :x: triangulation
+7. ✔️ 모델에 일부분에 텍스쳐 입히기
+8. ✔️ 사용자 입력에 따라 텍스쳐 변경하기
+9. ✔️ triangulation

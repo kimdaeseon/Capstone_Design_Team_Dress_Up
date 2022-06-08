@@ -1,4 +1,3 @@
-
 #include <k4a/k4a.h>
 #include <k4abt.h>
 #include <iostream>
@@ -6,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include "KinectClient.h"
 
 struct color_point_t {
     float xyz[3];
@@ -13,31 +13,50 @@ struct color_point_t {
     int body;
     int xth;
     int yth;
+    int color[3];
 };
 
-int main() {
+int main(int argc, char** argv) 
+{
     int returnCode = 1;
     k4a_device_t device = NULL;
     const int32_t TIMEOUT_IN_MS = 10000;
     k4a_transformation_t transformation = NULL;
-    k4a_transformation_t transformation_color_downscaled = NULL;
     k4a_capture_t capture = NULL;
     std::string file_name = "";
     uint32_t device_count = 0;
     k4a_device_configuration_t config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
     k4a_image_t depth_image = NULL;
     k4a_image_t color_image = NULL;
-    k4a_image_t color_image_downscaled = NULL;
     uint8_t deviceId = K4A_DEVICE_DEFAULT;
 
     //키넥트 디바이스 개수
     device_count = k4a_device_get_installed_count();
 
-    //개수가 확인되지 않으면 종료
-    if (device_count == 0) {
-        printf("No K4A devices found\n");
-        return 0;
+    if (argc != 2)
+    {
+        printf("Kinect.exe <output file>\n");
+        returnCode = 2;
+
+        if (device != NULL)
+        {
+            k4a_device_close(device);
+        }
+        return returnCode;
     }
+
+    //개수가 확인되지 않으면 종료
+    while (1) {
+        if (device_count == 0) {
+            printf("Kinect 카메라 연결을 확인하고 다시 실행해주세요.\n");
+            return 0;
+        }
+        else {
+            printf("Kinect 연결이 확인되었습니다.\n");
+            break;
+        }
+    }
+
     //디바이스 오픈
     if (K4A_RESULT_SUCCEEDED != k4a_device_open(deviceId, &device)) {
         printf("Failed to open device\n");
@@ -58,6 +77,21 @@ int main() {
     if (K4A_RESULT_SUCCEEDED != k4a_device_get_calibration(device, config.depth_mode, config.color_resolution, &calibration)) {
         printf("Failed to get calibration\n");
         return 0;
+    }
+
+    printf("준비가 되면 Y버튼을 눌러주세요.\n");
+    printf("종료하고 싶으시면 Q버튼을 눌러주세요.\n");
+
+    char input;
+    while (cin>>input) {
+        if (input == 'y' || input == 'Y') {
+            break;
+        }
+        else if(input =='Q' || input =='q') {
+            k4a_device_close(device);
+            printf("프로그램이 종료됩니다.\n");
+            return 0;
+        }
     }
 
     transformation = k4a_transformation_create(&calibration);
@@ -81,6 +115,14 @@ int main() {
         return 0;
     }
 
+    // Get a color image
+    color_image = k4a_capture_get_color_image(capture);
+    if (color_image == 0) {
+        printf("Failed to get color image from capture\n");
+        k4a_device_close(device);
+        return 0;
+    }
+
     // Get a depth image
     depth_image = k4a_capture_get_depth_image(capture);
     if (depth_image == 0) {
@@ -100,14 +142,14 @@ int main() {
     k4abt_tracker_t body_tracker;
     k4abt_tracker_configuration_t tracker_config = K4ABT_TRACKER_CONFIG_DEFAULT;
     if (K4A_RESULT_SUCCEEDED != k4abt_tracker_create(&calibration, tracker_config, &body_tracker)) {
-        printf("Failed to create body tracker\n"); 
+        printf("Failed to create body tracker\n");
         k4a_device_close(device);
         return 0;
     }
 
     //extract body frame
     k4abt_frame_t body_frame = NULL;
-    k4abt_tracker_enqueue_capture(body_tracker,capture,TIMEOUT_IN_MS);
+    k4abt_tracker_enqueue_capture(body_tracker, capture, TIMEOUT_IN_MS);
     k4a_wait_result_t pop_frame_result = k4abt_tracker_pop_result(body_tracker, &body_frame, TIMEOUT_IN_MS);
     if (K4A_RESULT_SUCCEEDED != pop_frame_result) {
         printf("Failed to pop body frame!\n");
@@ -118,11 +160,10 @@ int main() {
     //create body index map image
     body_index_map = k4abt_frame_get_body_index_map(body_frame);
     uint8_t* body_index_map_data = (uint8_t*)(void*)k4a_image_get_buffer(body_index_map);
-    
 
     //create point cloud image
     if (K4A_RESULT_SUCCEEDED != k4a_image_create(K4A_IMAGE_FORMAT_CUSTOM, depth_image_width_pixels,
-        depth_image_height_pixels, 3*depth_image_width_pixels * (int)sizeof(int16_t), &point_cloud_image)) {
+        depth_image_height_pixels, 3 * depth_image_width_pixels * (int)sizeof(int16_t), &point_cloud_image)) {
         printf("Failed to create point cloud image\n");
         k4a_device_close(device);
         return false;
@@ -140,7 +181,7 @@ int main() {
 
     int width = k4a_image_get_width_pixels(point_cloud_image);
     int height = k4a_image_get_height_pixels(point_cloud_image);
-    int16_t *point_cloud_image_data = (int16_t *)(void *)k4a_image_get_buffer(point_cloud_image);
+    int16_t* point_cloud_image_data = (int16_t*)(void*)k4a_image_get_buffer(point_cloud_image);
 
     int number = 1;
     int left = 1000, right = 0;
@@ -150,13 +191,13 @@ int main() {
         if (body_index_map_data[i] == K4ABT_BODY_INDEX_MAP_BACKGROUND) {
             continue;
         }
-        if (left > (i%width)) {
+        if (left > (i % width)) {
             left = (i % width);
         }
-        if (right < (i%width)) {
+        if (right < (i % width)) {
             right = (i % width);
         }
-        if (top > (i/width)) {
+        if (top > (i / width)) {
             top = (i / width);
         }
         if (bottom < (i / width)) {
@@ -164,14 +205,32 @@ int main() {
         }
     }
 
+    //depth camera 시점에서 color image 획득
+    k4a_image_t transformed_color_image = NULL;
+    if (K4A_RESULT_SUCCEEDED != k4a_image_create(K4A_IMAGE_FORMAT_COLOR_BGRA32, depth_image_width_pixels, depth_image_height_pixels,
+        depth_image_width_pixels * 4 * (int)sizeof(uint8_t), &transformed_color_image)) {
+        printf("Failed to create transformed color image\n");
+        k4a_device_close(device);
+        return false;
+    }
+    if (K4A_RESULT_SUCCEEDED != k4a_transformation_color_image_to_depth_camera(transformation, depth_image, color_image, transformed_color_image)) {
+        printf("Failed to transform color_image to depth camera\n");
+        k4a_device_close(device);
+        return false;
+    }
+    uint8_t* transformed_color_image_data = (uint8_t*)(void*)k4a_image_get_buffer(transformed_color_image);
+
     for (int i = 0; i < width * height; i++) {
         color_point_t point;
-        point.xyz[0] = point_cloud_image_data[3*i];
-        point.xyz[1] = point_cloud_image_data[3*i+1];
-        point.xyz[2] = point_cloud_image_data[3*i+2];
+        point.xyz[0] = point_cloud_image_data[3 * i];
+        point.xyz[1] = point_cloud_image_data[3 * i + 1];
+        point.xyz[2] = point_cloud_image_data[3 * i + 2];
         point.body = body_index_map_data[i];
         point.xth = i % width;
         point.yth = i / width;
+        point.color[0] = transformed_color_image_data[4 * i];
+        point.color[1] = transformed_color_image_data[4 * i + 1];
+        point.color[2] = transformed_color_image_data[4 * i + 2];
 
         if (point.xyz[2] == 0 || point.body == K4ABT_BODY_INDEX_MAP_BACKGROUND) {
             point.number = 0;
@@ -180,33 +239,33 @@ int main() {
             point.number = number;
             number++;
         }
-        points.push_back(point); 
+        points.push_back(point);
     }
 
     //triangulation
     std::vector<int> triangle;
-    std::vector<std::pair<float,float>> texture;
+    std::vector<std::pair<float, float>> texture;
 
-    for (int i = 0; i < width * (height-1)-1; i++) {
+    for (int i = 0; i < width * (height - 1) - 1; i++) {
         //i번째 z좌표, (i+1)번째 z좌표, (i+width)번째 z좌표가 모두 0이 아닐 때 triangle생성
-        if ((point_cloud_image_data[3*i+2] !=0 && point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] !=0) && 
-            (body_index_map_data[i]!=K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND &&body_index_map_data[i+width]!= K4ABT_BODY_INDEX_MAP_BACKGROUND)) {  
+        if ((point_cloud_image_data[3 * i + 2] != 0 && point_cloud_image_data[3 * i + 5] != 0 && point_cloud_image_data[3 * (i + width) + 2] != 0) &&
+            (body_index_map_data[i] != K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i + 1] != K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i + width] != K4ABT_BODY_INDEX_MAP_BACKGROUND)) {
             //반시계방향
-            triangle.push_back(points[i + 1].number);          
+            triangle.push_back(points[i + 1].number);
             triangle.push_back(points[i].number);
             triangle.push_back(points[i + width].number);
         }
 
         //i+1번째 z좌표, (i+width)번째 z좌표, (i+width+1)번째 z좌표가 모두 0이 아닐 때 triangle 생성
-        if ((point_cloud_image_data[3*i+5] !=0 && point_cloud_image_data[3*(i+width)+2] != 0 && point_cloud_image_data[3*(i+width+1)+2] !=0) && 
-            (body_index_map_data[i+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+width]!= K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i+width+1]!= K4ABT_BODY_INDEX_MAP_BACKGROUND)) {
+        if ((point_cloud_image_data[3 * i + 5] != 0 && point_cloud_image_data[3 * (i + width) + 2] != 0 && point_cloud_image_data[3 * (i + width + 1) + 2] != 0) &&
+            (body_index_map_data[i + 1] != K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i + width] != K4ABT_BODY_INDEX_MAP_BACKGROUND && body_index_map_data[i + width + 1] != K4ABT_BODY_INDEX_MAP_BACKGROUND)) {
             //반시계방향
-            triangle.push_back(points[i + 1].number);   
-            triangle.push_back(points[i + width].number);   
-            triangle.push_back(points[i + width + 1].number);  
+            triangle.push_back(points[i + 1].number);
+            triangle.push_back(points[i + width].number);
+            triangle.push_back(points[i + width + 1].number);
         }
     }
- 
+
     //points vector에서 z좌표가 0인 점 제거, body로 인식되지 않은 점 제거
     points.erase(std::remove_if(points.begin(), points.end(), [](color_point_t x)->bool {return x.number == 0; }),
         points.end());
@@ -228,18 +287,20 @@ int main() {
 
     k4a_image_release(point_cloud_image);
     k4a_image_release(depth_image);
+    k4a_image_release(color_image);
+    k4a_image_release(transformed_color_image);
 
     k4abt_frame_release(body_frame);
     k4a_image_release(body_index_map);
 
-    const std::string& filename = "test";
+    const std::string& filename = argv[1];
     std::ofstream myfile;
     std::stringstream fullname;
-    fullname << filename << "_" << ".obj";
+    fullname << filename;
     myfile.open(fullname.str());
 
     std::cout << points.size() << std::endl;
-    
+
     //vertex 좌표 정보
     for (size_t i = 0; i < points.size(); ++i) {
         myfile << "v ";
@@ -249,16 +310,23 @@ int main() {
     //texture 정보
     for (int i = 0; i < points.size(); i++) {
         myfile << "vt ";
-        myfile << (float)(points[i].xth-left) / (right-left) << " " << (float)(points[i].yth - top) / (bottom-top);
+        myfile << (float)(points[i].xth - left) / (right - left) << " " << (float)(points[i].yth - top) / (bottom - top);
+        myfile << "\n";
+    }
+
+    //color 정보
+    for (int i = 0; i < points.size(); i++) {
+        myfile << "c ";
+        myfile << points[i].color[2] << " " << points[i].color[1] << " " << points[i].color[0];
         myfile << "\n";
     }
 
     //face 정보
-    for (int i = 0; i < triangle.size()/3; i++) {
+    for (int i = 0; i < triangle.size() / 3; i++) {
         myfile << "f ";
-        myfile << triangle[3 * i] << "/" << triangle[3*i] << " ";
-        myfile << triangle[3 * i + 1] << "/" << triangle[3 * i + 1] << " ";
-        myfile << triangle[3 * i + 2] << "/" << triangle[3 * i + 2];
+        myfile << triangle[3 * i] << "/" << triangle[3 * i] << "/" << triangle[3 * i] << " ";
+        myfile << triangle[3 * i + 1] << "/" << triangle[3 * i + 1] << "/" << triangle[3 * i + 1] << " ";
+        myfile << triangle[3 * i + 2] << "/" << triangle[3 * i + 2] << "/" << triangle[3 * i + 2];
         myfile << "\n";
     }
 
@@ -307,9 +375,40 @@ int main() {
     myfile << (float)skeleton.joints[14].position.xyz.x << " " << (float)skeleton.joints[14].position.xyz.y << " " << (float)skeleton.joints[14].position.xyz.z;
     myfile << "\n";
 
+    //CLAVICLE_LEFT
+    myfile << "b ";
+    myfile << (float)skeleton.joints[4].position.xyz.x << " " << (float)skeleton.joints[4].position.xyz.y << " " << (float)skeleton.joints[4].position.xyz.z;
+    myfile << "\n";
+
+    //CLAVICLE_RIGHT
+    myfile << "b ";
+    myfile << (float)skeleton.joints[11].position.xyz.x << " " << (float)skeleton.joints[11].position.xyz.y << " " << (float)skeleton.joints[11].position.xyz.z;
+    myfile << "\n";
+
     k4a_device_close(device);
     myfile.close();
-    
+
+    SocketClient client;
+    FILE* file = NULL;
+    fopen_s(&file, argv[1], "r");
+    client.connection();
+    char* line;
+
+    while (1) {
+        char line[128];
+        // read the first word of the line
+        if (NULL != file) {
+            while (NULL != fgets(line, sizeof(line), file)) {
+
+                client.sendData(string(line));
+                client.recvFlag();
+            }
+            fclose(file);
+        }
+        return 0;
+    }
+
+    client.close();
     return 0;
 }
 

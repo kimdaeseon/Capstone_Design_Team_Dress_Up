@@ -9,7 +9,7 @@ int __cdecl main(void)
 {
 	SocketClient client;
 	FILE* file;
-	file = fopen("test_1.obj", "r");
+	file = fopen("test_.obj", "r");
 	client.connection();
 	char* line;
 

@@ -402,19 +402,20 @@ bool isTop(Vertex vertex, vector<Vertex> skeleton) {
 	float distanceOfNeckAndVertex = squareDistance(neck, vertex);
 	float distanceOfWaistAndVertex = squareDistance(waist, vertex);
 
-	if (distanceOfLeftWristAndVertex > distanceOfRightWristAndVertex) {
-		if (distanceOfRightWristAndVertex + distanceOfWrist < distanceOfLeftWristAndVertex) return false;
+	/*
+	if (distanceOfLeftWristAndVertex > distanceOfRightWristAndVertex) { //오른쪽 손목이랑 가까우면
+		if (distanceOfRightWristAndVertex + distanceOfWrist < distanceOfLeftWristAndVertex) return false; //오른손목거리 + 손목사이 거리 <왼쪽손목거리
+	}
+	else { //왼쪽 손목이랑 가까우면
+		if (distanceOfLeftWristAndVertex + distanceOfWrist < distanceOfRightWristAndVertex) return false; //왼쪽손목거리 + 손목사이거리 < 오른쪽손목거리
+	}
+	*/
+
+	if (distanceOfNeckAndVertex > distanceOfWaistAndVertex) { //목과의 거리 > 허리와의 거리
+		if (distanceOfWaistAndVertex + distanceOfWaistAndNeck < distanceOfNeckAndVertex) return false; //허리와거리 +허리와 목거리 <목과의 거리
 	}
 	else {
-		if (distanceOfLeftWristAndVertex + distanceOfWrist < distanceOfRightWristAndVertex) return false;
-	}
-
-
-	if (distanceOfNeckAndVertex > distanceOfWaistAndVertex) {
-		if (distanceOfWaistAndVertex + distanceOfWaistAndNeck < distanceOfNeckAndVertex) return false;
-	}
-	else {
-		if (distanceOfNeckAndVertex + distanceOfWaistAndNeck < distanceOfWaistAndVertex) return false;
+		if (distanceOfNeckAndVertex + distanceOfWaistAndNeck < distanceOfWaistAndVertex) return false; //목과의 거리 + 허리와 목거리 <허리와 거리
 	}
 
 	return true;
@@ -578,6 +579,10 @@ void display()
 	vector<Vertex> realColor = objParser.realColor;
 	vector<Vertex> realTexture = objParser.realTexture;
 
+<<<<<<< Updated upstream
+=======
+	// 상의
+>>>>>>> Stashed changes
 	glEnable(GL_AUTO_NORMAL);
 	glEnable(GL_NORMALIZE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -629,9 +634,10 @@ void display()
 
 
 	glEnable(GL_TEXTURE_2D);
-
+	
 	glBegin(GL_TRIANGLES);
 
+	//하의
 	for (register int j = 0; j < realVertex.size(); j = j + 3) {
 		bool isTopFace = isTop(realVertex[j], skeleton) && isTop(realVertex[j + 1], skeleton) && isTop(realVertex[j + 2], skeleton);
 		bool isBottomFace = isBottom(realVertex[j], skeleton) && isBottom(realVertex[j + 1], skeleton) && isBottom(realVertex[j + 2], skeleton);

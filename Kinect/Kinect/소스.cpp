@@ -375,6 +375,16 @@ int main(int argc, char** argv)
     myfile << (float)skeleton.joints[14].position.xyz.x << " " << (float)skeleton.joints[14].position.xyz.y << " " << (float)skeleton.joints[14].position.xyz.z;
     myfile << "\n";
 
+    //CLAVICLE_LEFT
+    myfile << "b ";
+    myfile << (float)skeleton.joints[4].position.xyz.x << " " << (float)skeleton.joints[4].position.xyz.y << " " << (float)skeleton.joints[4].position.xyz.z;
+    myfile << "\n";
+
+    //CLAVICLE_RIGHT
+    myfile << "b ";
+    myfile << (float)skeleton.joints[11].position.xyz.x << " " << (float)skeleton.joints[11].position.xyz.y << " " << (float)skeleton.joints[11].position.xyz.z;
+    myfile << "\n";
+
     k4a_device_close(device);
     myfile.close();
 

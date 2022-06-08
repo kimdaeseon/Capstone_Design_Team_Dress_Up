@@ -1,7 +1,6 @@
 #pragma once
 
 #include <math.h>
-#include <iostream>
 #include <fstream>
 
 #define GL_GLEXT_PROTOTYPES
@@ -50,15 +49,6 @@ float t[3] = { 0 };
 Vertex skt[23];
 BOOLEAN bTracked = false;
 bool checkt = false;
-
-/*
-Vertex *vertex;
-Vertex *vertex_color;
-Vertex *normal;
-Vertex* texture;
-Vertex* face;
-*/
-
 
 bool recheck;
 

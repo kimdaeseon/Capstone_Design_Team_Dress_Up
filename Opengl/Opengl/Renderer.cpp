@@ -780,57 +780,57 @@ void topCli() {
 	int number = -1;
 	string selection;
 
-	cout << "상의 텍스쳐 종류를 선택해주세요\n";
-	cout << "1. 줄무늬\n";
-	cout << "2. 땡땡이\n";
-	cout << "3. 단색\n";
-	cout << "4. 마크\n";
-	cout << "입력 :";
+	cout << "Please select the top texture type\n";
+	cout << "1. stripe\n";
+	cout << "2. waterDrop\n";
+	cout << "3. solid\n";
+	cout << "4. character\n";
+	cout << "input :";
 	cin >> number;
 
 	switch (number) {
 	case 1:
-		cout << "줄무늬 종류를 선택해주세요 (1 ~ 5번)" << endl;
-		cout << "입력 :";
+		cout << "Please select the stripe type (1 ~ 5)" << endl;
+		cout << "input :";
 		cin >> selection;
 		if (checkSelection(1, 5, selection)) topImage = string("./pattern/stripe/") + selection + string(".jpg");
 		else {
-			cout << "올바른 값을 입력해주세요\n";
+			cout << "Please enter the correct value\n";
 			topCli();
 		}
 		break;
 	case 2:
-		cout << "땡땡이 종류를 선택해주세요(1 ~5번)" << endl;
-		cout << "입력 :";
+		cout << "Please select the waterDrop type (1 ~ 5)" << endl;
+		cout << "input :";
 		cin >> selection;
 		if (checkSelection(1, 5, selection)) topImage = string("./pattern/waterDrop/") + selection + string(".jpg");
 		else {
-			cout << "올바른 값을 입력해주세요\n";
+			cout << "Please enter the correct value\n";
 			topCli();
 		}
 		break;
 	case 3:
-		cout << "단색 종류를 선택해주세요 (1 ~ 5번)" << endl;
-		cout << "입력 :";
+		cout << "Please select the solid type (1 ~ 5)" << endl;
+		cout << "input :";
 		cin >> selection;
 		if (checkSelection(1, 5, selection)) topImage = string("./pattern/solid/") + selection + string(".jpg");
 		else {
-			cout << "올바른 값을 입력해주세요\n";
+			cout << "Please enter the correct value\n";
 			topCli();
 		}
 		break;
 	case 4:
-		cout << "마크 종류를 선택해주세요 (1 ~ 6번)" << endl;
-		cout << "입력 :";
+		cout << "Please select the character type (1 ~ 5)" << endl;
+		cout << "input :";
 		cin >> selection;
 		if (checkSelection(1, 6, selection)) topImage = string("./pattern/characterTop/") + selection + string(".jpg");
 		else {
-			cout << "올바른 값을 입력해주세요\n";
+			cout << "Please enter the correct value\n";
 			topCli();
 		}
 		break;
 	default:
-		cout << "올바른 값을 입력해주세요\n";
+		cout << "Please enter the correct value\n";
 		topCli();
 	}
 }
@@ -839,82 +839,76 @@ void bottomCli() {
 	int number = -1;
 	string selection;
 
-	cout << "하의 텍스쳐 종류를 선택해주세요\n";
-	cout << "1. 줄무늬\n";
-	cout << "2. 땡땡이\n";
-	cout << "3. 단색\n";
-	cout << "입력 :";
+	cout << "Please select the bottom texture type\n";
+	cout << "1. stripe\n";
+	cout << "2. waterDrop\n";
+	cout << "3. solid\n";
+	cout << "input :";
 	cin >> number;
 
 	switch (number) {
 	case 1:
-		cout << "줄무늬 종류를 선택해주세요 (1 ~ 5번)" << endl;
-		cout << "입력 :";
+		cout << "Please select the stripe type (1 ~ 5)" << endl;
+		cout << "input :";
 		cin >> selection;
 		if (checkSelection(1, 5, selection)) bottomImage = string("./pattern/stripe/") + selection + string(".jpg");
 		else {
-			cout << "올바른 값을 입력해주세요\n";
+			cout << "Please enter the correct value\n";
 			bottomCli();
 		}
 		break;
 	case 2:
-		cout << "땡땡이 종류를 선택해주세요(1 ~5번)" << endl;
-		cout << "입력 :";
+		cout << "Please select the waterDrop type (1 ~ 5)" << endl;
+		cout << "input :";
 		cin >> selection;
 		if (checkSelection(1, 5, selection)) bottomImage = string("./pattern/waterDrop/") + selection + string(".jpg");
 		else {
-			cout << "올바른 값을 입력해주세요\n";
+			cout << "Please enter the correct value\n";
 			bottomCli();
 		}
 		break;
 	case 3:
-		cout << "단색 종류를 선택해주세요 (1 ~ 5번)" << endl;
-		cout << "입력 :";
+		cout << "Please select the solid type (1 ~ 5)" << endl;
+		cout << "input :";
 		cin >> selection;
 		if (checkSelection(1, 5, selection)) bottomImage = string("./pattern/solid/") + selection + string(".jpg");
 		else {
-			cout << "올바른 값을 입력해주세요\n";
+			cout << "Please enter the correct value\n";
 			bottomCli();
 		}
 		break;
 	default:
-		cout << "올바른 값을 입력해주세요\n";
+		cout << "Please enter the correct value\n";
 		bottomCli();
 	}
 }
 
 int main(int argc, char* argv[])
 {
-	try {
-		SocketServer sock = SocketServer();
-		vector<string> lines;
-		string msg;
-		string a;
-		sock.connection();
-		for (;;) {
-			msg = sock.recvData();
-			if (strcmp("fin", msg.c_str()) == 0)
-				throw a;
-			objParser.parse(msg.c_str());
-		}
-		sock.close();
+	SocketServer sock = SocketServer();
+	vector<string> lines;
+	string msg;
+	string a;
+	sock.connection();
+	for (;;) {
+		msg = sock.recvData();
+		if (strcmp("fin", msg.c_str()) == 0)
+			break;
+		objParser.parse(msg.c_str());
 	}
-	catch (string exception) {
+	sock.close();
 
-		//setlocale(LC_ALL, "");
+	objParser.calculateFace();
 
-		objParser.calculateFace();
+	topCli();
 
-		topCli();
+	bottomCli();
 
-		bottomCli();
+	InitializeWindow(argc, argv);
 
-		InitializeWindow(argc, argv);
+	display();
 
-		display();
+	glutMainLoop();
 
-		glutMainLoop();
-
-		return 1;
-	}
+	return 1;
 }

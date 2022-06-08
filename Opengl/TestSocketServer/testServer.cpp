@@ -9,7 +9,7 @@ int __cdecl main(void)
 {
 	SocketClient client;
 	FILE* file;
-	file = fopen("test_.obj", "r");
+	file = fopen("test_1.obj", "r");
 	client.connection();
 	char* line;
 
@@ -18,15 +18,15 @@ int __cdecl main(void)
 		// read the first word of the line
 		if (NULL != file) {
 			while (NULL != fgets(line, sizeof(line), file)) {
-				
 				client.sendData(string(line));
 				client.recvFlag();
 			}
 			fclose(file);
 		}
+		client.close();
 		return 0;
 	}
 
-	client.close();
+
 	
 }

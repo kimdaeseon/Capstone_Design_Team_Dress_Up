@@ -100,8 +100,9 @@ public:
 		if (iResult > 0) {
 			send(ClientSocket, "good", string("good").size(), 0);
 		}
-		else if (iResult == 0)
-			printf("Connection closing...\n");
+		else if (iResult == 0) {
+			return string("fin");
+		}
 		else {
 			printf("recv failed with error: %d\n", WSAGetLastError());
 			closesocket(ClientSocket);

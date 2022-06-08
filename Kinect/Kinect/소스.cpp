@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <string>
 #include "KinectClient.h"
 
 struct color_point_t {
@@ -30,20 +31,10 @@ int main(int argc, char** argv)
     k4a_image_t color_image = NULL;
     uint8_t deviceId = K4A_DEVICE_DEFAULT;
 
+    SocketClient client;
+
     //키넥트 디바이스 개수
     device_count = k4a_device_get_installed_count();
-
-    if (argc != 2)
-    {
-        printf("Kinect.exe <output file>\n");
-        returnCode = 2;
-
-        if (device != NULL)
-        {
-            k4a_device_close(device);
-        }
-        return returnCode;
-    }
 
     //개수가 확인되지 않으면 종료
     while (1) {
@@ -91,6 +82,9 @@ int main(int argc, char** argv)
             k4a_device_close(device);
             printf("프로그램이 종료됩니다.\n");
             return 0;
+        }
+        else {
+            printf("다시 입력해주세요\n");
         }
     }
 
@@ -293,101 +287,293 @@ int main(int argc, char** argv)
     k4abt_frame_release(body_frame);
     k4a_image_release(body_index_map);
 
-    const std::string& filename = argv[1];
-    std::ofstream myfile;
-    std::stringstream fullname;
-    fullname << filename;
-    myfile.open(fullname.str());
+    //const std::string& filename = argv[1];
+    //std::ofstream myfile;
+    //std::stringstream fullname;
+    //fullname << filename;
+    //myfile.open(fullname.str());
 
     std::cout << points.size() << std::endl;
 
+    client.connection();
+
     //vertex 좌표 정보
     for (size_t i = 0; i < points.size(); ++i) {
-        myfile << "v ";
+        string s;
+        s = "v ";
+        s += to_string(points[i].xyz[0]);
+        s += " ";
+        s += to_string(points[i].xyz[1]);
+        s += " ";
+        s += to_string(points[i].xyz[2]);
+        s += "\n";
+        /*
+        myfile << "v "
         myfile << points[i].xyz[0] << " " << points[i].xyz[1] << " " << points[i].xyz[2];
         myfile << "\n";
+        */
+        
+        client.sendData(s);
+        client.recvFlag();
     }
     //texture 정보
-    for (int i = 0; i < points.size(); i++) {
+    for (size_t i = 0; i < points.size(); i++) {
+        string s;
+        s = "vt ";
+        s += to_string((float)(points[i].xth - left) / (right - left));
+        s += " ";
+        s+= to_string((float)(points[i].yth - top) / (bottom - top));
+        s += "\n";
+        /*
         myfile << "vt ";
         myfile << (float)(points[i].xth - left) / (right - left) << " " << (float)(points[i].yth - top) / (bottom - top);
         myfile << "\n";
+        */
+ 
+        client.sendData(s);
+        client.recvFlag();
     }
 
     //color 정보
-    for (int i = 0; i < points.size(); i++) {
+    for (size_t i = 0; i < points.size(); i++) {
+        string s;
+        s = "c ";
+        s += to_string(points[i].color[2]);
+        s += " ";
+        s += to_string(points[i].color[1]);
+        s += " ";
+        s += to_string(points[i].color[0]);
+        s += "\n";
+        /*
         myfile << "c ";
         myfile << points[i].color[2] << " " << points[i].color[1] << " " << points[i].color[0];
         myfile << "\n";
+        */
+
+        client.sendData(s);
+        client.recvFlag();
     }
 
     //face 정보
-    for (int i = 0; i < triangle.size() / 3; i++) {
+    for (size_t i = 0; i < triangle.size() / 3; i++) {
+        string s;
+        s = "f ";
+        s += to_string(triangle[3 * i]);
+        s += "/";
+        s += to_string(triangle[3 * i]);
+        s += "/";
+        s += to_string(triangle[3 * i]);
+        s += " ";
+        s += to_string(triangle[3 * i + 1]);
+        s += "/";
+        s += to_string(triangle[3 * i + 1]);
+        s += "/";
+        s += to_string(triangle[3 * i + 1]);
+        s += " ";
+        s += to_string(triangle[3 * i + 2]);
+        s += "/";
+        s += to_string(triangle[3 * i + 2]);
+        s += "/";
+        s += to_string(triangle[3 * i + 2]);
+        s += "\n";
+        /*
         myfile << "f ";
         myfile << triangle[3 * i] << "/" << triangle[3 * i] << "/" << triangle[3 * i] << " ";
         myfile << triangle[3 * i + 1] << "/" << triangle[3 * i + 1] << "/" << triangle[3 * i + 1] << " ";
         myfile << triangle[3 * i + 2] << "/" << triangle[3 * i + 2] << "/" << triangle[3 * i + 2];
         myfile << "\n";
+        */
+
+        client.sendData(s);
+        client.recvFlag();
     }
 
+    string s[11];
+
     //Joint 좌표 정보(가운데 골반)
+    s[0] = "b ";
+    s[0] += to_string((float)skeleton.joints[0].position.xyz.x);
+    s[0] += " ";
+    s[0] += to_string((float)skeleton.joints[0].position.xyz.y);
+    s[0] += " ";
+    s[0] += to_string((float)skeleton.joints[0].position.xyz.z);
+    s[0] += "\n";
+
+    client.sendData(s[0]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[0].position.xyz.x << " " << (float)skeleton.joints[0].position.xyz.y << " " << (float)skeleton.joints[0].position.xyz.z;
     myfile << "\n";
+    */
 
     //왼쪽 엉덩이
+    s[1] = "b ";
+    s[1] += to_string((float)skeleton.joints[18].position.xyz.x);
+    s[1] += " ";
+    s[1] += to_string((float)skeleton.joints[18].position.xyz.y);
+    s[1] += " ";
+    s[1] += to_string((float)skeleton.joints[18].position.xyz.z);
+    s[1] += "\n";
+ 
+    client.sendData(s[1]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[18].position.xyz.x << " " << (float)skeleton.joints[18].position.xyz.y << " " << (float)skeleton.joints[18].position.xyz.z;
     myfile << "\n";
+    */
 
     //오른쪽 엉덩이
+    s[2] = "b ";
+    s[2] += to_string((float)skeleton.joints[22].position.xyz.x);
+    s[2] += " ";
+    s[2] += to_string((float)skeleton.joints[22].position.xyz.y);
+    s[2] += " ";
+    s[2] += to_string((float)skeleton.joints[22].position.xyz.z);
+    s[2] += "\n";
+
+    client.sendData(s[2]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[22].position.xyz.x << " " << (float)skeleton.joints[22].position.xyz.y << " " << (float)skeleton.joints[22].position.xyz.z;
     myfile << "\n";
+    */
 
     //왼쪽 발목
+    s[3] = "b ";
+    s[3] += to_string((float)skeleton.joints[20].position.xyz.x);
+    s[3] += " ";
+    s[3] += to_string((float)skeleton.joints[20].position.xyz.y);
+    s[3] += " ";
+    s[3] += to_string((float)skeleton.joints[20].position.xyz.z);
+    s[3] += "\n";
+ 
+    client.sendData(s[3]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[20].position.xyz.x << " " << (float)skeleton.joints[20].position.xyz.y << " " << (float)skeleton.joints[20].position.xyz.z;
     myfile << "\n";
-
+    */
     //오른쪽 발목
+    s[4] = "b ";
+    s[4] += to_string((float)skeleton.joints[24].position.xyz.x);
+    s[4] += " ";
+    s[4] += to_string((float)skeleton.joints[24].position.xyz.y);
+    s[4] += " ";
+    s[4] += to_string((float)skeleton.joints[24].position.xyz.z);
+    s[4] += "\n";
+
+    client.sendData(s[4]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[24].position.xyz.x << " " << (float)skeleton.joints[24].position.xyz.y << " " << (float)skeleton.joints[24].position.xyz.z;
     myfile << "\n";
+    */
 
     //가운데 골반
+    s[5] = "b ";
+    s[5] += to_string((float)skeleton.joints[0].position.xyz.x);
+    s[5] += " ";
+    s[5] += to_string((float)skeleton.joints[0].position.xyz.y);
+    s[5] += " ";
+    s[5] += to_string((float)skeleton.joints[0].position.xyz.z);
+    s[5] += "\n";
+
+    client.sendData(s[5]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[0].position.xyz.x << " " << (float)skeleton.joints[0].position.xyz.y << " " << (float)skeleton.joints[0].position.xyz.z;
     myfile << "\n";
-
+    */
     //목
+    s[6] = "b ";
+    s[6] += to_string((float)skeleton.joints[3].position.xyz.x);
+    s[6] += " ";
+    s[6] += to_string((float)skeleton.joints[3].position.xyz.y);
+    s[6] += " ";
+    s[6] += to_string((float)skeleton.joints[3].position.xyz.z);
+    s[6] += "\n";
+
+    client.sendData(s[6]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[3].position.xyz.x << " " << (float)skeleton.joints[3].position.xyz.y << " " << (float)skeleton.joints[3].position.xyz.z;
     myfile << "\n";
-
+    */
     //왼쪽 손목
+    s[7] = "b ";
+    s[7] += to_string((float)skeleton.joints[7].position.xyz.x);
+    s[7] += " ";
+    s[7] += to_string((float)skeleton.joints[7].position.xyz.y);
+    s[7] += " ";
+    s[7] += to_string((float)skeleton.joints[7].position.xyz.z);
+    s[7] += "\n";
+
+    client.sendData(s[7]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[7].position.xyz.x << " " << (float)skeleton.joints[7].position.xyz.y << " " << (float)skeleton.joints[7].position.xyz.z;
     myfile << "\n";
-
+    */
     //오른쪽 손목
+    s[8] = "b ";
+    s[8] += to_string((float)skeleton.joints[14].position.xyz.x);
+    s[8] += " ";
+    s[8] += to_string((float)skeleton.joints[14].position.xyz.y);
+    s[8] += " ";
+    s[8] += to_string((float)skeleton.joints[14].position.xyz.z);
+    s[8] += "\n";
+  
+    client.sendData(s[8]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[14].position.xyz.x << " " << (float)skeleton.joints[14].position.xyz.y << " " << (float)skeleton.joints[14].position.xyz.z;
     myfile << "\n";
-
+    */
     //CLAVICLE_LEFT
+    s[9] = "b ";
+    s[9] += to_string((float)skeleton.joints[4].position.xyz.x);
+    s[9] += " ";
+    s[9] += to_string((float)skeleton.joints[4].position.xyz.y);
+    s[9] += " ";
+    s[9] += to_string((float)skeleton.joints[4].position.xyz.z);
+    s[9] += "\n";
+
+    client.sendData(s[9]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[4].position.xyz.x << " " << (float)skeleton.joints[4].position.xyz.y << " " << (float)skeleton.joints[4].position.xyz.z;
     myfile << "\n";
-
+    */
     //CLAVICLE_RIGHT
+    s[10] = "b ";
+    s[10] += to_string((float)skeleton.joints[11].position.xyz.x);
+    s[10] += " ";
+    s[10] += to_string((float)skeleton.joints[11].position.xyz.y);
+    s[10] += " ";
+    s[10] += to_string((float)skeleton.joints[11].position.xyz.z);
+    s[10] += "\n";
+
+    client.sendData(s[10]);
+    client.recvFlag();
+    /*
     myfile << "b ";
     myfile << (float)skeleton.joints[11].position.xyz.x << " " << (float)skeleton.joints[11].position.xyz.y << " " << (float)skeleton.joints[11].position.xyz.z;
     myfile << "\n";
-
+    */
     k4a_device_close(device);
-    myfile.close();
-
+    //myfile.close();
+    client.close();
+    /*
     SocketClient client;
     FILE* file = NULL;
     fopen_s(&file, argv[1], "r");
@@ -409,6 +595,7 @@ int main(int argc, char** argv)
     }
 
     client.close();
+    */
     return 0;
 }
 

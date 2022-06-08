@@ -889,16 +889,19 @@ int main(int argc, char* argv[])
 		SocketServer sock = SocketServer();
 		vector<string> lines;
 		string msg;
+		string a;
 		sock.connection();
 		for (;;) {
 			msg = sock.recvData();
+			if (strcmp("fin", msg.c_str()) == 0)
+				throw a;
 			objParser.parse(msg.c_str());
 		}
 		sock.close();
 	}
 	catch (string exception) {
 
-		setlocale(LC_ALL, "");
+		//setlocale(LC_ALL, "");
 
 		objParser.calculateFace();
 

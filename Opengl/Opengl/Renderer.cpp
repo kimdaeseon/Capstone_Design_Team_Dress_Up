@@ -387,6 +387,28 @@ float squareDistance(Vertex vertex1, Vertex vertex2) {
 	return differX * differX + differY * differY + differZ * differZ;
 }
 
+bool calculateLine(Vertex vertex1, vector<Vertex> skeleton) {
+	Vertex Left_clavicle = skeleton[9];
+	Vertex Right_clavicle = skeleton[10];
+	Vertex Neck = skeleton[6];
+	float inclination;
+	float y;
+
+	if (vertex1.X < Neck.X) { //vertex1이 목보다 왼쪽이면 
+		inclination = (float)(Neck.Y - Right_clavicle.Y) / (Neck.X - Right_clavicle.X); //목과 빗장뼈를 잇는 직선의 기울기 l1
+		y = inclination * (vertex1.X - Neck.X) + Neck.Y; //ㅣl1 기울기로 Neck을 지나는 직선에 vertex1의 x값을 대입했을 때의 y값
+	}
+	else { //vertex1이 목보다 오른쪽이면
+		inclination = (float)(Neck.Y - Left_clavicle.Y) / (Neck.X - Left_clavicle.X); //목과 빗장뼈를 잇는 직선의 기울기 l2
+		y = inclination * (vertex1.X - Neck.X) + Neck.Y; //ㅣl2 기울기로 Neck을 지나는 직선에 vertex1의 x값을 대입했을 때의 y값
+	}
+
+	if (vertex1.Y < y) {
+		return true;
+	}
+	return false;
+}
+
 bool isTop(Vertex vertex, vector<Vertex> skeleton) {
 	Vertex leftWrist = skeleton[7];
 	Vertex rightWrist = skeleton[8];
@@ -402,14 +424,21 @@ bool isTop(Vertex vertex, vector<Vertex> skeleton) {
 	float distanceOfNeckAndVertex = squareDistance(neck, vertex);
 	float distanceOfWaistAndVertex = squareDistance(waist, vertex);
 
-	/*
+	if (!calculateLine(vertex, skeleton)) { //두 직선보다 위의 점은 모두 false 처리
+		return false;
+	}
+	if (vertex.Y >= neck.Y) {	//목보다 위의 점은 true 처리
+		return true;
+	}
+
+	//남은 점 중에서
 	if (distanceOfLeftWristAndVertex > distanceOfRightWristAndVertex) { //오른쪽 손목이랑 가까우면
 		if (distanceOfRightWristAndVertex + distanceOfWrist < distanceOfLeftWristAndVertex) return false; //오른손목거리 + 손목사이 거리 <왼쪽손목거리
 	}
 	else { //왼쪽 손목이랑 가까우면
 		if (distanceOfLeftWristAndVertex + distanceOfWrist < distanceOfRightWristAndVertex) return false; //왼쪽손목거리 + 손목사이거리 < 오른쪽손목거리
 	}
-	*/
+
 
 	if (distanceOfNeckAndVertex > distanceOfWaistAndVertex) { //목과의 거리 > 허리와의 거리
 		if (distanceOfWaistAndVertex + distanceOfWaistAndNeck < distanceOfNeckAndVertex) return false; //허리와거리 +허리와 목거리 <목과의 거리
@@ -579,10 +608,7 @@ void display()
 	vector<Vertex> realColor = objParser.realColor;
 	vector<Vertex> realTexture = objParser.realTexture;
 
-<<<<<<< Updated upstream
-=======
 	// 상의
->>>>>>> Stashed changes
 	glEnable(GL_AUTO_NORMAL);
 	glEnable(GL_NORMALIZE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

@@ -3,12 +3,18 @@
 #include "ObjParser.h"
 #include "stb_image.h"
 
+#include <iostream>
 #include <vector>
 #include <sstream>
 #include <fstream>
 #include <cmath>
 
+using namespace std;
+
 ObjParser objParser = ObjParser();
+string topImage;
+string bottomImage;
+
 void draw_center(void)
 {
 	glBegin(GL_LINES);
@@ -485,19 +491,6 @@ Vertex calculateNormal(Vertex v1, Vertex v2, Vertex v3) {
 	return crossDot(va, vb);
 }
 
-GLfloat* getAmbient(Vertex color) {
-	GLfloat result[4] = { color.X, color.Y, color.Z, 1 };
-	return result;
-}
-GLfloat* getDiffuse(Vertex color) {
-	GLfloat result[4] = { color.X, color.Y, color.Z, 1 };
-	return result;
-}
-GLfloat* getSpecular(Vertex color) {
-	GLfloat result[4] = { color.X, color.Y, color.Z, 1 };
-	return result;
-}
-
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -523,35 +516,13 @@ void display()
 	GLfloat ambient0[4] = { 1, 1, 1, 1.0 };
 	GLfloat specular0[4] = { 1, 1, 1, 1.0 };
 	GLfloat light0_pos[4] = { -2.0, 2.0, 2.0, 1.0 };
-	//GLfloat light0_pos[4] = { 0.3, 0.3, 0.5, 1.0 };
-	//GLfloat spot_dir[3] = { -2.0f, 0.0f, -1.0f };
-	
-	/*
-	GLfloat diffuse0[4] = { 0.984313, 0.807843, 0.694117, 1.0 };
-	GLfloat ambient0[4] = { 0.984313, 0.807843, 0.694117, 1.0 };
-	GLfloat specular0[4] = { 0.984313, 0.807843, 0.694117, 1.0 };
-	*/
-	/*
-	glEnable(GL_LIGHT1);
-	GLfloat diffuse1[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat ambient1[4] = { 0.5, 0.5, 0.5, 1.0 };
-	GLfloat specular1[4] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat light1_pos[4] = { 2.0, 2.0, 2.0, 1.0 };
-	*/
+
 	
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_pos);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
-	//glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spot_dir);
-	//glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 50.0);
-	//glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 1.0);
-	
-	/*glLightfv(GL_LIGHT1, GL_POSITION, light1_pos);
-	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, specular1);
-	*/
+
 
 
 	// test #2
@@ -573,7 +544,7 @@ void display()
 	GLfloat mat_diffuse[4] = { number, number, number, 1 };
 	GLfloat mat_specular[4] = { number, number, number, 1 };
 	GLfloat mat_shininess = 256.0;
-	//
+
 	//// 폴리곤의 앞면의 재질을 설정 
 	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
@@ -582,7 +553,7 @@ void display()
 	
 	// 텍스처 로드 및 생성
 	int width, height, nrChannels;
-	unsigned char* data = stbi_load("2.png", &width, &height, &nrChannels, 0);
+	unsigned char* data = stbi_load(topImage.c_str(), &width, &height, &nrChannels, 0);
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, 3, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -607,7 +578,6 @@ void display()
 	vector<Vertex> realColor = objParser.realColor;
 	vector<Vertex> realTexture = objParser.realTexture;
 
-	// 
 	glEnable(GL_AUTO_NORMAL);
 	glEnable(GL_NORMALIZE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -640,7 +610,7 @@ void display()
 	glEnd();
 
 	// 텍스처 로드 및 생성
-	data = stbi_load("1.jpg", &width, &height, &nrChannels, 0);
+	data = stbi_load(bottomImage.c_str(), &width, &height, &nrChannels, 0);
 	if (data)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, 3, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -768,7 +738,118 @@ vector<string> split(string str, char Delimiter) {
 	return result;
 }
 
+bool checkSelection(int min, int max, string selection) {
+	int number = atoi(selection.c_str());
+	if (min <= number && max >= number) return true;
+	return false;
+}
 
+void topCli() {
+	int number = -1;
+	string selection;
+
+	cout << "상의 텍스쳐 종류를 선택해주세요\n";
+	cout << "1. 줄무늬\n";
+	cout << "2. 땡땡이\n";
+	cout << "3. 단색\n";
+	cout << "4. 마크\n";
+	cout << "입력 :";
+	cin >> number;
+
+	switch (number) {
+	case 1:
+		cout << "줄무늬 종류를 선택해주세요 (1 ~ 5번)" << endl;
+		cout << "입력 :";
+		cin >> selection;
+		if (checkSelection(1, 5, selection)) topImage = string("./pattern/stripe/") + selection + string(".jpg");
+		else {
+			cout << "올바른 값을 입력해주세요\n";
+			topCli();
+		}
+		break;
+	case 2:
+		cout << "땡땡이 종류를 선택해주세요(1 ~5번)" << endl;
+		cout << "입력 :";
+		cin >> selection;
+		if (checkSelection(1, 5, selection)) topImage = string("./pattern/waterDrop/") + selection + string(".jpg");
+		else {
+			cout << "올바른 값을 입력해주세요\n";
+			topCli();
+		}
+		break;
+	case 3:
+		cout << "단색 종류를 선택해주세요 (1 ~ 5번)" << endl;
+		cout << "입력 :";
+		cin >> selection;
+		if (checkSelection(1, 5, selection)) topImage = string("./pattern/solid/") + selection + string(".jpg");
+		else {
+			cout << "올바른 값을 입력해주세요\n";
+			topCli();
+		}
+		break;
+	case 4:
+		cout << "마크 종류를 선택해주세요 (1 ~ 6번)" << endl;
+		cout << "입력 :";
+		cin >> selection;
+		if (checkSelection(1, 6, selection)) topImage = string("./pattern/characterTop/") + selection + string(".jpg");
+		else {
+			cout << "올바른 값을 입력해주세요\n";
+			topCli();
+		}
+		break;
+	default:
+		cout << "올바른 값을 입력해주세요\n";
+		topCli();
+	}
+}
+
+void bottomCli() {
+	int number = -1;
+	string selection;
+
+	cout << "하의 텍스쳐 종류를 선택해주세요\n";
+	cout << "1. 줄무늬\n";
+	cout << "2. 땡땡이\n";
+	cout << "3. 단색\n";
+	cout << "입력 :";
+	cin >> number;
+
+	switch (number) {
+	case 1:
+		cout << "줄무늬 종류를 선택해주세요 (1 ~ 5번)" << endl;
+		cout << "입력 :";
+		cin >> selection;
+		if (checkSelection(1, 5, selection)) bottomImage = string("./pattern/stripe/") + selection + string(".jpg");
+		else {
+			cout << "올바른 값을 입력해주세요\n";
+			bottomCli();
+		}
+		break;
+	case 2:
+		cout << "땡땡이 종류를 선택해주세요(1 ~5번)" << endl;
+		cout << "입력 :";
+		cin >> selection;
+		if (checkSelection(1, 5, selection)) bottomImage = string("./pattern/waterDrop/") + selection + string(".jpg");
+		else {
+			cout << "올바른 값을 입력해주세요\n";
+			bottomCli();
+		}
+		break;
+	case 3:
+		cout << "단색 종류를 선택해주세요 (1 ~ 5번)" << endl;
+		cout << "입력 :";
+		cin >> selection;
+		if (checkSelection(1, 5, selection)) bottomImage = string("./pattern/solid/") + selection + string(".jpg");
+		else {
+			cout << "올바른 값을 입력해주세요\n";
+			bottomCli();
+		}
+		break;
+	default:
+		cout << "올바른 값을 입력해주세요\n";
+		bottomCli();
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -785,7 +866,13 @@ int main(int argc, char* argv[])
 	}
 	catch (string exception) {
 
+		setlocale(LC_ALL, "");
+
 		objParser.calculateFace();
+
+		topCli();
+
+		bottomCli();
 
 		InitializeWindow(argc, argv);
 

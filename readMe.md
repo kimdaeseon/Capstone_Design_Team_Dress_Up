@@ -36,3 +36,18 @@
 7. ✔️ 모델에 일부분에 텍스쳐 입히기
 8. ✔️ 사용자 입력에 따라 텍스쳐 변경하기
 9. ✔️ triangulation
+
+### :four: 선택가능한 패턴 종류
+
+![선택가능한 패턴](https://user-images.githubusercontent.com/65288601/172844682-5950f197-5e43-4bad-a23f-6ad56dde47c5.PNG)
+
+### :five: 사용 방법
+
+1. OpenGL 디렉토리 코드를 빌드 후 실행한다
+2. Kinect 디렉토리 코드를 빌드 후 실행한다.
+3. Kinect 카메라가 연결되면 Console의 안내에 따라 진행한다.
+4. Kinect 쪽에서 OpenGL 쪽으로 데이터를 전송한 후 OpenGL의 Console 안내에 따라 진행한다.
+
+### :six: 결과물 예시
+
+![도커티](https://user-images.githubusercontent.com/65288601/172844712-c44d93dd-4750-4057-b783-29c7ea5fa841.PNG)
